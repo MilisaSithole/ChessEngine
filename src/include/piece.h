@@ -23,6 +23,7 @@ enum class Colour {
 class Piece {
 public:
     Piece(PieceType type = PieceType::None, Colour colour = Colour::None);
+    Piece(char symbol);
 
     PieceType getType() const;
     Colour getColour() const;
@@ -30,7 +31,7 @@ public:
     void setType(PieceType type);
     void setColour(Colour colour);
 
-    char toChar();
+    char symbol();
     bool isEmpty() const;
 
 private:

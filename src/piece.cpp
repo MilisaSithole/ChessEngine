@@ -2,6 +2,37 @@
 
 Piece::Piece(PieceType type, Colour colour) : type(type), colour(colour) {}
 
+Piece::Piece(char symbol){
+    type = PieceType::None;
+    colour = (std::isupper(symbol)) ? Colour::White : Colour::Black;
+
+    switch(std::tolower(symbol)){
+        case 'p':
+            type = PieceType::Pawn;
+            break;
+        case 'r':
+            type = PieceType::Rook;
+            break;
+        case 'n':
+            type = PieceType::Knight;
+            break;
+        case 'b':
+            type = PieceType::Bishop;
+            break;
+        case 'q':
+            type = PieceType::Queen;
+            break;
+        case 'k':
+            type = PieceType::King;
+            break;
+        default:
+            type = PieceType::None;
+            break;
+    }
+
+    Piece(type, colour);
+}
+
 PieceType Piece::getType() const{
     return type;
 }
@@ -18,7 +49,7 @@ void Piece::setColour(Colour colour){
     this->colour = colour;
 }
 
-char Piece::toChar(){
+char Piece::symbol(){
     if(isEmpty()){
         return '.';
     }
