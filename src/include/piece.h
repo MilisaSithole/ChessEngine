@@ -20,9 +20,9 @@ enum class Colour {
     None
 };
 
-class Piece {
+class Piece{
 public:
-    Piece(PieceType type = PieceType::None, Colour colour = Colour::None);
+    Piece();
     Piece(char symbol);
 
     PieceType getType() const;
@@ -33,6 +33,7 @@ public:
 
     char symbol();
     bool isEmpty() const;
+    bool isWhite() const;
 
 private:
     PieceType type;

@@ -1,6 +1,9 @@
 #include "include/piece.h"
 
-Piece::Piece(PieceType type, Colour colour) : type(type), colour(colour) {}
+Piece::Piece(){
+    this->type = PieceType::None;
+    this->colour = Colour::None;
+}
 
 Piece::Piece(char symbol){
     type = PieceType::None;
@@ -30,7 +33,8 @@ Piece::Piece(char symbol){
             break;
     }
 
-    Piece(type, colour);
+    this->type = type;
+    this->colour = colour;
 }
 
 PieceType Piece::getType() const{
@@ -84,6 +88,10 @@ char Piece::symbol(){
 
 bool Piece::isEmpty() const{
     return type == PieceType::None;
+}
+
+bool Piece::isWhite() const{
+    return colour == Colour::White;
 }
 
 std::string getPieceTypeName(PieceType type){

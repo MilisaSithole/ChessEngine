@@ -1,4 +1,9 @@
-out/*
+out
+CmakeFiles
 *.autosave
-.vscode/*
-build/*
+.vscode
+build
+
+*.yaml
+ChessEngine
+CMake*
