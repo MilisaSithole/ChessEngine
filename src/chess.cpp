@@ -1,24 +1,33 @@
 #include "include/chess.h"
 
-Chess::Chess(){
-    Board board;
-    isWhitesTurn = true;
+Chess::Chess(const string &fen){
+    cout << "Initial fen: " << fen << endl;
+    // Initialize board
+    board = Board(fen);
 }
 
-void Chess::move(std::string lan){
-    Move move(lan, board, isWhitesTurn);
+void Chess::printBoard(){
+    board.printBoard();
+}
+
+void Chess::move(string lan){
+    Move move(lan, board);
 
     if(move.isMoveValid()){
         move.makeMove(board);
         board.printBoard();
-        isWhitesTurn = !isWhitesTurn;
+        board.moveUpdate(move.getFromSquare(), move.getToSquare());
     } else {
-        std::cout << "Invalid move" << std::endl;
+        cout << "Invalid move" << endl;
     }
 
-    std::cout << getPlayerTurn() << "'s turn" << std::endl;
+    cout << getPlayerTurn() << "'s turn" << endl;
 }
 
-std::string Chess::getPlayerTurn(){
-    return (isWhitesTurn) ? "White" : "Black";
+string Chess::getFen(){
+    return board.getFen();
+}
+
+string Chess::getPlayerTurn(){
+    return (board.isWhiteToPlay()) ? "White" : "Black";
 }

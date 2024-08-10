@@ -34,8 +34,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 clean:
 	rm -rf $(BUILD_DIR)
+	clear
 
 run: all
+	clear
 	./$(TARGET)
 
 .PHONY: all clean

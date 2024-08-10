@@ -2,20 +2,61 @@
 #define BOARD_H
 
 #include <iostream>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <cstdint>
+#include <bitset>
+
 #include "piece.h"
 
 using namespace std;
 
+// Casting rights masks
+const uint8_t WHITE_KINGSIDE_CASTLE = 0x01;
+const uint8_t WHITE_QUEENSIDE_CASTLE = 0x02;
+const uint8_t BLACK_KINGSIDE_CASTLE = 0x04;
+const uint8_t BLACK_QUEENSIDE_CASTLE = 0x08;
+
 class Board{
 public:
-    Board();
-    void initBoard();
+    Board(const string &fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    void initBoard(const string &fen);
     void printBoard();
-    Piece getPieceAt(int r, int c);
-    void makeMove(int fromR, int fromC, int toR, int toC);
+    void parseFen(const string &fen);
+    string getFen();
+    Piece getPieceAt(int square);
+    void makeMove(int fromSquare, int toSquare);
+    int algebraicToIndex(string &square);
+    string idxToAlgebraic(int &idx);
+    bool isWhiteToPlay();
+    void moveUpdate(int fromSquare, int toSquare);
+
+    void setBitBoards();
+    void updateBitBoards(int idxFrom, int idxTo);
+    void printBitBoard(uint64_t bitboard);
 
 private:
-    Piece board[8][8];
+    // Piece board[8][8];
+    Piece board[64];
+    bool isWhitesTurn;
+    uint8_t castlingRights;
+    int enPassantIdx;
+    int halfMoveClock;
+    int fullMoveNumber;
+
+    uint64_t whitePawnsBB   = 0ULL;
+    uint64_t blackPawnsBB   = 0ULL;
+    uint64_t whiteRooksBB   = 0ULL;
+    uint64_t blackRooksBB   = 0ULL;
+    uint64_t whiteKnightsBB = 0ULL;
+    uint64_t blackKnightsBB = 0ULL;
+    uint64_t whiteBishopsBB = 0ULL;
+    uint64_t blackBishopsBB = 0ULL;
+    uint64_t whiteQueensBB  = 0ULL;
+    uint64_t blackQueensBB  = 0ULL;
+    uint64_t whiteKingBB    = 0ULL;
+    uint64_t blackKingBB    = 0ULL;
 };
 
 #endif

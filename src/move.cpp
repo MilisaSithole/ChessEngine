@@ -1,50 +1,50 @@
 #include "include/move.h"
 
-Move::Move(std::string lan, Board &board, bool isWhitesTurn){
-    std::string moveFromStr = lan.substr(0, 2);
-    std::string moveToStr = lan.substr(2, 2);
-    this->moveFrom = algebraicToIndecies(moveFromStr);
-    this->moveTo = algebraicToIndecies(moveToStr);
-    this->movedPiece = board.getPieceAt(moveFrom.rank, moveFrom.file);
-    this->capturedPiece = board.getPieceAt(moveTo.rank, moveTo.file);
-    this->isWhitesTurn = isWhitesTurn;
+Move::Move(string lan, Board &board){
+    string moveFromStr = lan.substr(0, 2);
+    string moveToStr = lan.substr(2, 2);
+    this->moveFrom = algebraicToIndex(moveFromStr);
+    this->moveTo = algebraicToIndex(moveToStr);
+    this->movedPiece = board.getPieceAt(moveFrom);
+    this->capturedPiece = board.getPieceAt(moveTo);
+    this->isWhitesTurn = board.isWhiteToPlay();
 }
 
-Square Move::algebraicToIndecies(std::string &square){
-    Square s = Square(7 - uint8_t(square[1] - '1'), uint8_t(square[0] - 'a'));
-    return s;
+int Move::algebraicToIndex(string &square){
+    return int(square[0] - 'a') + ((7 - int(square[1] - '1')) * 8);
+}
+
+string Move::indexToAlgebraic(int &idx){
+    return string(1, 'a' + idx % 8) + to_string(8 - idx / 8);
 }
 
 bool Move::isMoveValid(){
-    if(!movedPiece.isEmpty() && movedPiece.isWhite() == isWhitesTurn && (capturedPiece.isEmpty() || capturedPiece.getColour() != movedPiece.getColour()))
+    if(!movedPiece.isEmpty() && movedPiece.isWhite() == isWhitesTurn && 
+       (capturedPiece.isEmpty() || capturedPiece.getColour() != movedPiece.getColour()))
         return true;
     return false;
 }
 
 void Move::makeMove(Board &board){
-    board.makeMove(moveFrom.rank, moveFrom.file, moveTo.rank, moveTo.file);
+    board.makeMove(moveFrom, moveTo);
 }
 
 void Move::printMove(){
-    std::cout << "Moved from " << char('a' + moveFrom.file) << int(8 - moveFrom.rank) << " to " << char('a' + moveTo.file) << int(8 - moveTo.rank) << std::endl;
+    std::cout << "Moved from " << indexToAlgebraic(moveFrom) << " to " << indexToAlgebraic(moveTo) << std::endl;
 }
 
-int Move::getFromRank(){
-    return int(moveFrom.rank);
+int Move::getFromSquare(){
+    return moveFrom;
 }
 
-int Move::getFromFile(){
-    return int(moveFrom.file);
-}
-
-int Move::getToRank(){
-    return int(moveTo.rank);
-}
-
-int Move::getToFile(){
-    return int(moveTo.file);
+int Move::getToSquare(){
+    return moveTo;
 }
 
 Piece Move::getMovedPiece(){
     return movedPiece;
+}
+
+bool Move::isPawnMovedOrCaptured(){
+    return (movedPiece.getType() == PieceType::Pawn) || (capturedPiece.getType() == PieceType::Pawn);
 }

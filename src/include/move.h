@@ -3,9 +3,12 @@
 
 #include <iostream>
 #include <cstdint>
+#include <string>
+
 #include "piece.h"
 #include "board.h"
-#include <string>
+
+using namespace std;
 
 struct Square{
     uint8_t rank;
@@ -17,20 +20,20 @@ struct Square{
 
 class Move{
 public:
-    Move(std::string lan, Board &board, bool isWhitesTurn);
-    Square algebraicToIndecies(std::string &square);
+    Move(string lan, Board &board);
+    int algebraicToIndex(string &square);
+    string indexToAlgebraic(int &idx);
     bool isMoveValid();
     void makeMove(Board &board);
     void printMove();
-    int getFromRank();
-    int getFromFile();
-    int getToRank();
-    int getToFile();
+    int getFromSquare();
+    int getToSquare();
     Piece getMovedPiece();
+    bool isPawnMovedOrCaptured();
 
 private:
-    Square moveFrom;
-    Square moveTo;
+    int moveFrom;
+    int moveTo;
     Piece movedPiece;
     Piece capturedPiece;
     bool isWhitesTurn;
