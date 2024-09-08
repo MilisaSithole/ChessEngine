@@ -136,6 +136,13 @@ void Board::makeMove(int fromSquare, int toSquare){
     // Update bit boards
     updateBitBoards(fromSquare, toSquare);
 
+    // Check for double pawn push
+    if(board[fromSquare].getType() == PieceType::Pawn && abs(fromSquare - toSquare) == 16){
+        enPassantIdx = (fromSquare + toSquare) / 2;
+    }
+    else
+        enPassantIdx = -1;
+
     board[toSquare] = board[fromSquare];
     board[fromSquare] = Piece();
 
@@ -330,9 +337,17 @@ void Board::updateBitBoards(int fromSquare, int toSquare){
 
 void Board::printBitBoard(uint64_t bitboard){
     for(int i = 0; i < 64; i++){
-        cout << ((bitboard >> i) & 1);
+        cout << ((bitboard >> i) & 1) << " ";
         if(i % 8 == 7)
-            cout << " ";
+            cout << "\n";
     }
     cout << endl;
+}
+
+uint64_t Board::getWhiteBB(){
+    return whitePawnsBB | whiteRooksBB | whiteKnightsBB | whiteBishopsBB | whiteQueensBB | whiteKingBB;
+}
+
+uint64_t Board::getBlackBB(){
+    return blackPawnsBB | blackRooksBB | blackKnightsBB | blackBishopsBB | blackQueensBB | blackKingBB;
 }

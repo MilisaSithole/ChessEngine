@@ -31,10 +31,27 @@ public:
     string idxToAlgebraic(int &idx);
     bool isWhiteToPlay();
     void moveUpdate(int fromSquare, int toSquare);
+    int getEnPassantSquare(){return enPassantIdx;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo);
     void printBitBoard(uint64_t bitboard);
+    uint64_t getWhiteBB();
+    uint64_t getBlackBB();
+    uint64_t getAllBB(){return getWhiteBB() | getBlackBB();};
+    uint64_t getEmptyBB(){return ~getAllBB();}
+    uint64_t getWhitePawnsBB(){return whitePawnsBB;};
+    uint64_t getBlackPawnsBB(){return blackPawnsBB;};
+    uint64_t getWhiteRooksBB(){return whiteRooksBB;};
+    uint64_t getBlackRooksBB(){return blackRooksBB;};
+    uint64_t getWhiteKnightsBB(){return whiteKnightsBB;};
+    uint64_t getBlackKnightsBB(){return blackKnightsBB;};
+    uint64_t getWhiteBishopsBB(){return whiteBishopsBB;};
+    uint64_t getBlackBishopsBB(){return blackBishopsBB;};
+    uint64_t getWhiteQueensBB(){return whiteQueensBB;};
+    uint64_t getBlackQueensBB(){return blackQueensBB;};
+    uint64_t getWhiteKingBB(){return whiteKingBB;};
+    uint64_t getBlackKingBB(){return blackKingBB;};
 
 private:
     // Piece board[8][8];

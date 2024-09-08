@@ -6,6 +6,7 @@
 
 #include "board.h"
 #include "move.h"
+#include "moveGenerator.h"
 
 using namespace std;
 
@@ -16,6 +17,8 @@ public:
     void move(string lan);
     string getFen();
     string getPlayerTurn();
+
+    void printGeneratedMoves();
 
 private:
     Board board;

@@ -31,3 +31,7 @@ string Chess::getFen(){
 string Chess::getPlayerTurn(){
     return (board.isWhiteToPlay()) ? "White" : "Black";
 }
+
+void Chess::printGeneratedMoves(){
+    MoveGenerator moves(board);
+}

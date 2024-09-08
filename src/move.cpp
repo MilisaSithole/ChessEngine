@@ -10,6 +10,14 @@ Move::Move(string lan, Board &board){
     this->isWhitesTurn = board.isWhiteToPlay();
 }
 
+Move::Move(int moveFrom, int moveTo, Board &board){
+    this->moveFrom = moveFrom;
+    this->moveTo = moveTo;
+    this->movedPiece = board.getPieceAt(moveFrom);
+    this->capturedPiece = board.getPieceAt(moveTo);
+    this->isWhitesTurn = board.isWhiteToPlay();
+}
+
 int Move::algebraicToIndex(string &square){
     return int(square[0] - 'a') + ((7 - int(square[1] - '1')) * 8);
 }
@@ -30,7 +38,7 @@ void Move::makeMove(Board &board){
 }
 
 void Move::printMove(){
-    std::cout << "Moved from " << indexToAlgebraic(moveFrom) << " to " << indexToAlgebraic(moveTo) << std::endl;
+    std::cout << indexToAlgebraic(moveFrom) << " -> " << indexToAlgebraic(moveTo) << std::endl;
 }
 
 int Move::getFromSquare(){

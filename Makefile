@@ -21,6 +21,9 @@ TARGET = $(BUILD_DIR)/chess_engine
 # Include directories
 INCLUDES = -I$(INC_DIR)
 
+# Test executable
+TEST_TARGET = $(BUILD_DIR)/test
+
 # Rules
 all: $(TARGET)
 
@@ -39,5 +42,17 @@ clean:
 run: all
 	clear
 	./$(TARGET)
+
+clean_test:
+	rm -f $(TEST_TARGET)
+	clear
+
+test: $(TEST_TARGET)
+	clear
+	./$(TEST_TARGET)
+
+$(TEST_TARGET): test.cpp $(filter-out $(BUILD_DIR)/main.o, $(OBJ_FILES))
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
 
 .PHONY: all clean

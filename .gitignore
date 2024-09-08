@@ -7,3 +7,6 @@ build
 *.yaml
 ChessEngine
 CMake*
+*.py
+test
+test.cpp

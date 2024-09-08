@@ -7,40 +7,30 @@
 #include "move.h"
 #include "piece.h"
 
+using namespace std;
+
 class MoveGenerator{
 public:
-    virtual std::vector<Move> generateMoves(const Board &board, int rank, int file) = 0;
-    virtual ~MoveGenerator() = default;
-};
+    MoveGenerator(Board &board);
+    void generateLegalMoves();
+    void generatePseudoLegalMoves();
+    bool isMoveLegal(Move &move);
+    bool isInCheck();
 
-class PawnMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
-};
+private:
+    Board &board;
+    vector<Move> pseudoLegalMoves;
+    vector<Move> legalMoves;
 
-class RookMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
-};
+private:
+    void generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares);
+    void generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPieces, uint64_t allPieces);
+    void generateKnightMoves(uint64_t friendlyKnights, uint64_t friendlyPieces);
+    void generateBishopMoves(uint64_t friendlyBishops, uint64_t enemyPieces, uint64_t allPieces);
+    void generateQueenMoves(uint64_t friendlyQueens, uint64_t enemyPieces, uint64_t allPieces);
+    void generateKingMoves(uint64_t friendlyKing, uint64_t enemyPieces, uint64_t allPieces);
 
-class KnightMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
-};
-
-class BishopMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
-};
-
-class QueenMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
-};
-
-class KingMoveGenerator : public MoveGenerator{
-public:
-    std::vector<Move> generateMoves(const Board &board, int rank, int file) override;
+    void addBBToMoves(int fromSquare, uint64_t movesBB);
 };
 
 #endif

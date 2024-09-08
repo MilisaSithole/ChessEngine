@@ -21,6 +21,7 @@ struct Square{
 class Move{
 public:
     Move(string lan, Board &board);
+    Move(int moveFrom, int moveTo, Board &board);
     int algebraicToIndex(string &square);
     string indexToAlgebraic(int &idx);
     bool isMoveValid();
