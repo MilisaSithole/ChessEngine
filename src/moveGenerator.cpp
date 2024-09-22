@@ -1,32 +1,64 @@
 #include "include/moveGenerator.h"
 
 MoveGenerator::MoveGenerator(Board &board) : board(board) {
+    // Set bitboards
+    if(board.isWhiteToPlay()){
+        myPawns = board.getWhitePawnsBB();
+        myRooks = board.getWhiteRooksBB();
+        myKnights = board.getWhiteKnightsBB();
+        myBishops = board.getWhiteBishopsBB();
+        myQueens = board.getWhiteQueensBB();
+        myKing = board.getWhiteKingBB();
+        myPieces = board.getWhiteBB();
+
+        enemyPawns = board.getBlackPawnsBB();
+        enemyRooks = board.getBlackRooksBB();
+        enemyKnights = board.getBlackKnightsBB();
+        enemyBishops = board.getBlackBishopsBB();
+        enemyQueens = board.getBlackQueensBB();
+        enemyKing = board.getBlackKingBB();
+        enemyPieces = board.getBlackBB();
+    }
+    else{
+        myPawns = board.getBlackPawnsBB();
+        myRooks = board.getBlackRooksBB();
+        myKnights = board.getBlackKnightsBB();
+        myBishops = board.getBlackBishopsBB();
+        myQueens = board.getBlackQueensBB();
+        myKing = board.getBlackKingBB();
+        myPieces = board.getBlackBB();
+
+        enemyPawns = board.getWhitePawnsBB();
+        enemyRooks = board.getWhiteRooksBB();
+        enemyKnights = board.getWhiteKnightsBB();
+        enemyBishops = board.getWhiteBishopsBB();
+        enemyQueens = board.getWhiteQueensBB();
+        enemyKing = board.getWhiteKingBB();
+        enemyPieces = board.getWhiteBB();
+    }
+    allPieces = board.getAllBB();
+    emptySquares = ~allPieces;
+
+    // Generate pseudo legal moves
     generateLegalMoves();
 }
 
 void MoveGenerator::generateLegalMoves(){
-    generatePseudoLegalMoves();
+    cout << "\nAttacked squares: " << endl;
+    uint64_t attackedSquares = getAttackedSquares();
+    board.printBitBoard(attackedSquares);
+    // generatePseudoLegalMoves();
 }
 
 void MoveGenerator::generatePseudoLegalMoves(){
-    if(board.isWhiteToPlay()){
-        generatePawnMoves(board.getWhitePawnsBB(), board.getBlackBB(), board.getEmptyBB());
-        generateRookMoves(board.getWhiteRooksBB(), board.getBlackBB(), board.getAllBB());
-        generateKnightMoves(board.getWhiteKnightsBB(), board.getWhiteBB());
-        generateBishopMoves(board.getWhiteBishopsBB(), board.getBlackBB(), board.getAllBB());
-        generateQueenMoves(board.getWhiteQueensBB(), board.getBlackBB(), board.getAllBB());
-        generateKingMoves(board.getWhiteKingBB(), board.getBlackBB(), board.getAllBB());
-    }
-    else {
-        generatePawnMoves(board.getBlackPawnsBB(), board.getWhiteBB(), board.getEmptyBB());
-        generateRookMoves(board.getBlackRooksBB(), board.getWhiteBB(), board.getAllBB());
-        generateKnightMoves(board.getBlackKnightsBB(), board.getBlackBB());   
-        generateBishopMoves(board.getBlackBishopsBB(), board.getWhiteBB(), board.getAllBB());
-        generateQueenMoves(board.getBlackQueensBB(), board.getWhiteBB(), board.getAllBB());
-        generateKingMoves(board.getBlackKingBB(), board.getWhiteBB(), board.getAllBB());
-    }
+    generatePawnMoves(myPawns, enemyPawns, emptySquares);
+    generateRookMoves(myRooks, enemyPieces, allPieces);
+    generateKnightMoves(myKnights, myPieces);
+    generateBishopMoves(myBishops, enemyPieces, allPieces);
+    generateQueenMoves(myQueens, enemyPieces, allPieces);
+    generateKingMoves(myKing, enemyPieces, allPieces);
 
-    cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
+    // cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
 
     // for(auto move : pseudoLegalMoves){
     //     move.printMove();
@@ -212,7 +244,8 @@ void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPiec
                 }
 
                 distance++;
-            }        
+            }
+            rookMoves ^= 1ULL << fromSquare;
 
             addBBToMoves(fromSquare, rookMoves);
         }
@@ -272,8 +305,6 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
     uint64_t fileH = 0x8080808080808080;
     uint64_t rank1 = 0xFF00000000000000;
     uint64_t rank8 = 0x00000000000000FF;
-
-    uint64_t allMoves = 0ULL;
 
     int fromSquare = 0;
     while(friendlyBishops){
@@ -363,16 +394,12 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
             }       
             
             // Add the moves to the pseudo legal moves
-            allMoves |= bishopMoves;
             addBBToMoves(fromSquare, bishopMoves);
         }
 
         friendlyBishops >>= 1;
         fromSquare++;
     }
-
-    cout << "Bishop moves: " << endl;
-    board.printBitBoard(allMoves);
 }
 
 void MoveGenerator::generateQueenMoves(uint64_t friendlyQueens, uint64_t enemyPieces, uint64_t allPieces){
@@ -426,4 +453,304 @@ void MoveGenerator::addBBToMoves(int fromSquare, uint64_t movesBB){
         movesBB >>= 1;
         toSquare++;
     }
+}
+
+
+
+uint64_t MoveGenerator::getAttackedSquares(){
+    uint64_t attackedSquares = 0ULL;
+
+    attackedSquares |= getPawnAttacks(enemyPawns);
+    attackedSquares |= getRookAttacks(enemyRooks);
+    attackedSquares |= getKnightAttacks(enemyKnights);
+    attackedSquares |= getBishopAttacks(enemyBishops);
+    attackedSquares |= getQueenAttacks(enemyQueens);
+    attackedSquares |= getKingAttacks(enemyKing);
+
+    return attackedSquares;
+}
+
+uint64_t MoveGenerator::getPawnAttacks(uint64_t oppPawns){
+    uint64_t leftMask = (!board.isWhiteToPlay()) ? 0x0101010101010101 : 0x8080808080808080;
+    uint64_t rightMask = (!board.isWhiteToPlay()) ? 0x8080808080808080 : 0x0101010101010101;
+
+    uint64_t pawnAttacks = 0ULL;
+
+    // Left captures
+    if(board.isWhiteToPlay())
+        pawnAttacks |= (oppPawns & ~leftMask) << 9 & (enemyPieces | emptySquares);
+    else
+        pawnAttacks |= (oppPawns & ~leftMask) >> 9 & (enemyPieces | emptySquares);
+
+    // Right captures
+    if(board.isWhiteToPlay())
+        pawnAttacks |= (oppPawns & ~rightMask) << 7 & (enemyPieces | emptySquares);
+    else
+        pawnAttacks |= (oppPawns & ~rightMask) >> 7 & (enemyPieces | emptySquares);
+
+    // En Passant captures
+    int enPassantSquare = board.getPrevEnPassantSquare();
+    if(enPassantSquare != -1){
+        if(board.isWhiteToPlay()){
+            pawnAttacks |= (oppPawns & ~leftMask) << 9 & (1ULL << enPassantSquare);
+            pawnAttacks |= (oppPawns & ~rightMask) << 7 & (1ULL << enPassantSquare);
+        }
+        else{
+            pawnAttacks |= (oppPawns & ~leftMask) >> 9 & (1ULL << enPassantSquare);
+            pawnAttacks |= (oppPawns & ~rightMask) >> 7 & (1ULL << enPassantSquare);
+        }
+    }
+
+    return pawnAttacks;
+}
+
+uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks){
+    uint64_t fileA = 0x0101010101010101;
+    uint64_t fileH = 0x8080808080808080;
+
+    uint64_t rookAttacks = 0ULL;
+    uint64_t emptyAndKing = emptySquares | myKing;
+    uint64_t allButKing = allPieces & ~myKing;
+    uint64_t mineButKing = myPieces & ~myKing;
+
+    int fromSquare = 0;
+    while(oppRooks){
+        if(oppRooks & 1){
+            uint8_t direction = 0b1111; 
+            /*
+                0b0001 = Up, 
+                0b0010 = Down, 
+                0b0100 = Left, 
+                0b1000 = Right
+            */ 
+            int distance = 1;
+            uint64_t currentMove;
+            while(direction){
+                // Up moves
+                if(direction & 0b0001){
+                    currentMove = (1ULL << fromSquare) >> (8 * distance);
+                    rookAttacks |= currentMove & emptyAndKing;
+
+                    if(currentMove & (mineButKing | enemyPieces)){
+                        rookAttacks |= currentMove & (mineButKing | enemyPieces);
+                        direction &= ~0b0001;
+                    }
+                    else if(currentMove & allButKing)
+                        direction &= ~0b0001;
+                }
+
+                // Down moves
+                if(direction & 0b0010){
+                    currentMove = (1ULL << fromSquare) << (8 * distance);
+                    rookAttacks |= currentMove & emptyAndKing;
+
+                    if(currentMove & (mineButKing | enemyPieces)){
+                        rookAttacks |= currentMove & (mineButKing | enemyPieces);
+                        direction &= ~0b0010;
+                    }
+                    else if(currentMove & allButKing)
+                        direction &= ~0b0010;
+                }
+
+                // Left moves
+                if(direction & 0b0100){
+                    if(fromSquare % 8 == 0)
+                        direction &= ~0b0100;
+                    else{
+                        currentMove = (1ULL << fromSquare) >> distance;
+                        rookAttacks |= currentMove & emptyAndKing;
+
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            rookAttacks |= currentMove & (mineButKing | enemyPieces);
+                            direction &= ~0b0100;
+                        }
+                        else if(currentMove & allButKing)
+                            direction &= ~0b0100;
+                        else if(currentMove & fileA)
+                            direction &= ~0b0100;
+                    }
+                }
+
+                // Right moves
+                if(direction & 0b1000){
+                    if(fromSquare % 8 == 7)
+                        direction &= ~0b1000;
+                    else{
+                        currentMove = (1ULL << fromSquare) << distance;
+                        rookAttacks |= currentMove & emptyAndKing;
+
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            rookAttacks |= currentMove & (mineButKing | enemyPieces);
+                            direction &= ~0b1000;
+                        }
+                        else if(currentMove & allButKing)
+                            direction &= ~0b1000;
+                        else if(currentMove & fileH)
+                            direction &= ~0b1000;
+                    }
+                }
+                distance++;
+            }
+            rookAttacks ^= 1ULL << fromSquare;
+        }
+
+        oppRooks >>= 1;
+        fromSquare++;
+    }
+
+    return rookAttacks;
+}
+
+uint64_t MoveGenerator::getKnightAttacks(uint64_t oppKnights){
+    uint64_t notFileA = 0xFEFEFEFEFEFEFEFE;
+    uint64_t notFileAB = 0xFCFCFCFCFCFCFCFC;
+    uint64_t notFileH = 0x7F7F7F7F7F7F7F7F;
+    uint64_t notFileGH = 0x3F3F3F3F3F3F3F3F;
+
+    uint64_t knightAttacks = 0ULL;
+
+    // Top Top moves
+    knightAttacks |= (oppKnights & notFileA) >> 17;
+    knightAttacks |= (oppKnights & notFileH) >> 15;
+    // Mid moves
+    knightAttacks |= (oppKnights & notFileAB) >> 10;
+    knightAttacks |= (oppKnights & notFileGH) >> 6;
+    knightAttacks |= (oppKnights & notFileAB) << 6;
+    knightAttacks |= (oppKnights & notFileGH) << 10;
+    // Bottom Bottom moves
+    knightAttacks |= (oppKnights & notFileA) << 15;
+    knightAttacks |= (oppKnights & notFileH) << 17;
+
+    return knightAttacks;
+}
+
+uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
+    uint64_t fileA = 0x0101010101010101;
+    uint64_t fileH = 0x8080808080808080;
+    uint64_t rank1 = 0xFF00000000000000;
+    uint64_t rank8 = 0x00000000000000FF;
+
+    uint64_t bishopAttacks = 0ULL;
+
+    int fromSquare = 0;
+    while(oppBishops){
+        if(oppBishops & 1){
+            uint8_t direction = 0b1111; 
+            /*
+                0b0001 = Up-Left, 
+                0b0010 = Up-Right, 
+                0b0100 = Down-Left,
+                0b1000 = Down-Right
+            */ 
+            int distance = 1;
+            uint64_t currentMove;
+            while(direction){
+                // Up-Left moves
+                if(direction & 0b0001){
+                    if(fromSquare % 8 == 0 || (1ULL << fromSquare) & rank8)
+                        direction &= ~0b0001;
+                    else{
+                        currentMove = (1ULL << fromSquare) >> (9 * distance);
+                        bishopAttacks |= currentMove & emptySquares;
+
+                        if(currentMove & (myPieces | enemyPieces)){
+                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                            direction &= ~0b0001;
+                        }
+                        else if(currentMove & allPieces || currentMove & fileA || currentMove & rank8)
+                            direction &= ~0b0001;
+                    }
+                }
+
+                // Up-Right moves
+                if(direction & 0b0010){
+                    if(fromSquare % 8 == 7 || (1ULL << fromSquare) & rank8)
+                        direction &= ~0b0010;
+                    else{
+                        currentMove = (1ULL << fromSquare) >> (7 * distance);
+                        bishopAttacks |= currentMove & emptySquares;
+
+                        if(currentMove & (myPieces | enemyPieces)){
+                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                            direction &= ~0b0010;
+                        }
+                        else if(currentMove & allPieces || currentMove & fileH || currentMove & rank8)
+                            direction &= ~0b0010;
+                    }
+                }
+
+                // Down-Left moves
+                if(direction & 0b0100){
+                    if(fromSquare % 8 == 0 || (1ULL << fromSquare) & rank1)
+                        direction &= ~0b0100;
+                    else{
+                        currentMove = (1ULL << fromSquare) << (7 * distance);
+                        bishopAttacks |= currentMove & emptySquares;
+
+                        if(currentMove & (myPieces | enemyPieces)){
+                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                            direction &= ~0b0100;
+                        }
+                        else if(currentMove & allPieces || currentMove & fileA || currentMove & rank1)
+                            direction &= ~0b0100;
+                    }                    
+                }
+
+                // Down-Right moves
+                if(direction & 0b1000){
+                    if(fromSquare % 8 == 7 || (1ULL << fromSquare) & rank1)
+                        direction &= ~0b1000;
+                    else{
+                        currentMove = (1ULL << fromSquare) << (9 * distance);
+                        bishopAttacks |= currentMove & emptySquares;
+
+                        if(currentMove & (myPieces | enemyPieces)){
+                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                            direction &= ~0b1000;
+                        }
+                        else if(currentMove & allPieces || currentMove & fileH || currentMove & rank1)
+                            direction &= ~0b1000;
+                    }
+                }
+                distance++;
+            }
+        }
+
+        oppBishops >>= 1;
+        fromSquare++;
+    }
+
+    return bishopAttacks;
+}
+
+uint64_t MoveGenerator::getQueenAttacks(uint64_t oppQueens){
+    uint64_t queenAttacks = 0ULL;
+
+    queenAttacks |= getRookAttacks(oppQueens);
+    queenAttacks |= getBishopAttacks(oppQueens);
+
+    return queenAttacks;
+}
+
+uint64_t MoveGenerator::getKingAttacks(uint64_t oppKing){
+    uint64_t fileA = 0x0101010101010101;
+    uint64_t fileH = 0x8080808080808080;
+    
+    uint64_t kingAttacks = 0ULL;
+
+    // Left moves, top to bottom
+    kingAttacks |= (oppKing & ~fileA) >> 9;
+    kingAttacks |= (oppKing & ~fileA) >> 1;
+    kingAttacks |= (oppKing & ~fileA) << 7;
+
+    // Vertical moves
+    kingAttacks |= oppKing >> 8;
+    kingAttacks |= oppKing << 8;
+
+    // Right moves, top to bottom
+    kingAttacks |= (oppKing & ~fileH) >> 7;
+    kingAttacks |= (oppKing & ~fileH) << 1;
+    kingAttacks |= (oppKing & ~fileH) << 9;
+
+    return kingAttacks;
 }

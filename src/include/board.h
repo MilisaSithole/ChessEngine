@@ -32,14 +32,16 @@ public:
     bool isWhiteToPlay();
     void moveUpdate(int fromSquare, int toSquare);
     int getEnPassantSquare(){return enPassantIdx;};
+    int getPrevEnPassantSquare(){return prevEnPassantIdx;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo);
     void printBitBoard(uint64_t bitboard);
+
     uint64_t getWhiteBB();
     uint64_t getBlackBB();
     uint64_t getAllBB(){return getWhiteBB() | getBlackBB();};
-    uint64_t getEmptyBB(){return ~getAllBB();}
+    uint64_t getEmptyBB(){return ~getAllBB();};
     uint64_t getWhitePawnsBB(){return whitePawnsBB;};
     uint64_t getBlackPawnsBB(){return blackPawnsBB;};
     uint64_t getWhiteRooksBB(){return whiteRooksBB;};
@@ -58,7 +60,7 @@ private:
     Piece board[64];
     bool isWhitesTurn;
     uint8_t castlingRights;
-    int enPassantIdx;
+    int enPassantIdx, prevEnPassantIdx;
     int halfMoveClock;
     int fullMoveNumber;
 
