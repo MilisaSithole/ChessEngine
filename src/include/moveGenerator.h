@@ -26,6 +26,8 @@ private:
     uint64_t enemyPawns, enemyRooks, enemyKnights, enemyBishops, enemyQueens, enemyKing;
     uint64_t myPieces, enemyPieces;
     uint64_t emptySquares, allPieces;
+    uint64_t kingDangerSquares; // Slider pieces see through king
+    uint64_t attackedSquares;
 
 private:
     void generatePawnMoves(uint64_t friendlyPawns, uint64_t oppPieces, uint64_t emptySquares);
@@ -37,13 +39,12 @@ private:
 
     void addBBToMoves(int fromSquare, uint64_t movesBB);
 
-    uint64_t getAttackedSquares();
-    // TODO: refactor these funcs
+    uint64_t getAttackedSquares(bool kingDanger);
     uint64_t getPawnAttacks(uint64_t oppPawns);
-    uint64_t getRookAttacks(uint64_t oppRooks);
+    uint64_t getRookAttacks(uint64_t oppRooks, bool kingDanger);
     uint64_t getKnightAttacks(uint64_t oppKnights);
-    uint64_t getBishopAttacks(uint64_t oppBishops);
-    uint64_t getQueenAttacks(uint64_t oppQueens);
+    uint64_t getBishopAttacks(uint64_t oppBishops, bool kingDanger);
+    uint64_t getQueenAttacks(uint64_t oppQueens, bool kingDanger);
     uint64_t getKingAttacks(uint64_t oppKing);
 };
 

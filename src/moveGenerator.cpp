@@ -45,9 +45,11 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
 
 void MoveGenerator::generateLegalMoves(){
     cout << "\nAttacked squares: " << endl;
-    uint64_t attackedSquares = getAttackedSquares();
-    board.printBitBoard(attackedSquares);
-    // generatePseudoLegalMoves();
+    kingDangerSquares = getAttackedSquares(true);
+    attackedSquares = getAttackedSquares(false);
+    board.printBitBoard(kingDangerSquares);
+
+    generatePseudoLegalMoves();
 }
 
 void MoveGenerator::generatePseudoLegalMoves(){
@@ -425,7 +427,7 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             kingMoves |= ((position & ~fileA) >> 1) & availableSquares;
             kingMoves |= ((position & ~fileA) << 7) & availableSquares;
 
-            // Vertical mocves
+            // Vertical moves
             kingMoves |= (position >> 8) & availableSquares;
             kingMoves |= (position << 8) & availableSquares;
 
@@ -434,8 +436,15 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             kingMoves |= ((position & ~fileH) << 1) & availableSquares;
             kingMoves |= ((position & ~fileH) << 9) & availableSquares;
 
+            // Remove attacked squares rom moves
+            kingMoves &= ~kingDangerSquares;
+
             // Add moves to pseudo legal moves
             addBBToMoves(fromSquare, kingMoves);
+
+            // TODO: remove
+            cout << "King moves: " << endl;
+            board.printBitBoard(kingMoves);
 
             return; // There should only be one king on the board
         }
@@ -457,14 +466,14 @@ void MoveGenerator::addBBToMoves(int fromSquare, uint64_t movesBB){
 
 
 
-uint64_t MoveGenerator::getAttackedSquares(){
+uint64_t MoveGenerator::getAttackedSquares(bool kingDanger){
     uint64_t attackedSquares = 0ULL;
 
     attackedSquares |= getPawnAttacks(enemyPawns);
-    attackedSquares |= getRookAttacks(enemyRooks);
+    attackedSquares |= getRookAttacks(enemyRooks, kingDanger);
     attackedSquares |= getKnightAttacks(enemyKnights);
-    attackedSquares |= getBishopAttacks(enemyBishops);
-    attackedSquares |= getQueenAttacks(enemyQueens);
+    attackedSquares |= getBishopAttacks(enemyBishops, kingDanger);
+    attackedSquares |= getQueenAttacks(enemyQueens, kingDanger);
     attackedSquares |= getKingAttacks(enemyKing);
 
     return attackedSquares;
@@ -504,14 +513,20 @@ uint64_t MoveGenerator::getPawnAttacks(uint64_t oppPawns){
     return pawnAttacks;
 }
 
-uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks){
+uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger){
     uint64_t fileA = 0x0101010101010101;
     uint64_t fileH = 0x8080808080808080;
 
+    uint64_t emptyAndKing = emptySquares;
+    uint64_t allButKing = allPieces;
+    uint64_t mineButKing = myPieces;
+    if(kingDanger){
+        emptyAndKing |= myKing;
+        allButKing &= ~myKing;
+        mineButKing &= ~myKing;
+    }
+
     uint64_t rookAttacks = 0ULL;
-    uint64_t emptyAndKing = emptySquares | myKing;
-    uint64_t allButKing = allPieces & ~myKing;
-    uint64_t mineButKing = myPieces & ~myKing;
 
     int fromSquare = 0;
     while(oppRooks){
@@ -624,11 +639,20 @@ uint64_t MoveGenerator::getKnightAttacks(uint64_t oppKnights){
     return knightAttacks;
 }
 
-uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
+uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops, bool kingDanger){
     uint64_t fileA = 0x0101010101010101;
     uint64_t fileH = 0x8080808080808080;
     uint64_t rank1 = 0xFF00000000000000;
     uint64_t rank8 = 0x00000000000000FF;
+
+    uint64_t emptyAndKing = emptySquares;
+    uint64_t allButKing = allPieces;
+    uint64_t mineButKing = myPieces;
+    if(kingDanger){
+        emptyAndKing |= myKing;
+        allButKing &= ~myKing;
+        mineButKing &= ~myKing;
+    }
 
     uint64_t bishopAttacks = 0ULL;
 
@@ -651,13 +675,13 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
                         direction &= ~0b0001;
                     else{
                         currentMove = (1ULL << fromSquare) >> (9 * distance);
-                        bishopAttacks |= currentMove & emptySquares;
+                        bishopAttacks |= currentMove & emptyAndKing;
 
-                        if(currentMove & (myPieces | enemyPieces)){
-                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            bishopAttacks |= currentMove & (mineButKing | enemyPieces);
                             direction &= ~0b0001;
                         }
-                        else if(currentMove & allPieces || currentMove & fileA || currentMove & rank8)
+                        else if(currentMove & allButKing || currentMove & fileA || currentMove & rank8)
                             direction &= ~0b0001;
                     }
                 }
@@ -668,13 +692,13 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
                         direction &= ~0b0010;
                     else{
                         currentMove = (1ULL << fromSquare) >> (7 * distance);
-                        bishopAttacks |= currentMove & emptySquares;
+                        bishopAttacks |= currentMove & emptyAndKing;
 
-                        if(currentMove & (myPieces | enemyPieces)){
-                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            bishopAttacks |= currentMove & (mineButKing | enemyPieces);
                             direction &= ~0b0010;
                         }
-                        else if(currentMove & allPieces || currentMove & fileH || currentMove & rank8)
+                        else if(currentMove & allButKing || currentMove & fileH || currentMove & rank8)
                             direction &= ~0b0010;
                     }
                 }
@@ -685,13 +709,13 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
                         direction &= ~0b0100;
                     else{
                         currentMove = (1ULL << fromSquare) << (7 * distance);
-                        bishopAttacks |= currentMove & emptySquares;
+                        bishopAttacks |= currentMove & emptyAndKing;
 
-                        if(currentMove & (myPieces | enemyPieces)){
-                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            bishopAttacks |= currentMove & (mineButKing | enemyPieces);
                             direction &= ~0b0100;
                         }
-                        else if(currentMove & allPieces || currentMove & fileA || currentMove & rank1)
+                        else if(currentMove & allButKing || currentMove & fileA || currentMove & rank1)
                             direction &= ~0b0100;
                     }                    
                 }
@@ -702,13 +726,13 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
                         direction &= ~0b1000;
                     else{
                         currentMove = (1ULL << fromSquare) << (9 * distance);
-                        bishopAttacks |= currentMove & emptySquares;
+                        bishopAttacks |= currentMove & emptyAndKing;
 
-                        if(currentMove & (myPieces | enemyPieces)){
-                            bishopAttacks |= currentMove & (myPieces | enemyPieces);
+                        if(currentMove & (mineButKing | enemyPieces)){
+                            bishopAttacks |= currentMove & (mineButKing | enemyPieces);
                             direction &= ~0b1000;
                         }
-                        else if(currentMove & allPieces || currentMove & fileH || currentMove & rank1)
+                        else if(currentMove & allButKing || currentMove & fileH || currentMove & rank1)
                             direction &= ~0b1000;
                     }
                 }
@@ -723,11 +747,11 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops){
     return bishopAttacks;
 }
 
-uint64_t MoveGenerator::getQueenAttacks(uint64_t oppQueens){
+uint64_t MoveGenerator::getQueenAttacks(uint64_t oppQueens, bool kingDanger){
     uint64_t queenAttacks = 0ULL;
 
-    queenAttacks |= getRookAttacks(oppQueens);
-    queenAttacks |= getBishopAttacks(oppQueens);
+    queenAttacks |= getRookAttacks(oppQueens, kingDanger);
+    queenAttacks |= getBishopAttacks(oppQueens, kingDanger);
 
     return queenAttacks;
 }
