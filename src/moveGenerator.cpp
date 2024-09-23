@@ -44,27 +44,37 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
 }
 
 void MoveGenerator::generateLegalMoves(){
-    cout << "\nAttacked squares: " << endl;
+    // cout << "\nAttacked squares: " << endl;
     kingDangerSquares = getAttackedSquares(true);
     attackedSquares = getAttackedSquares(false);
-    board.printBitBoard(kingDangerSquares);
+    // board.printBitBoard(kingDangerSquares);
+
+    // cout << "Checkers: " << endl;
+    checkers = getAttackers(myKing);
+    // board.printBitBoard(checkers);
+    updateNumCheckers();
+    updateCheckMasks();
+
+    getAttackerRay(myKing);
 
     generatePseudoLegalMoves();
 }
 
 void MoveGenerator::generatePseudoLegalMoves(){
-    generatePawnMoves(myPawns, enemyPawns, emptySquares);
-    generateRookMoves(myRooks, enemyPieces, allPieces);
-    generateKnightMoves(myKnights, myPieces);
-    generateBishopMoves(myBishops, enemyPieces, allPieces);
-    generateQueenMoves(myQueens, enemyPieces, allPieces);
     generateKingMoves(myKing, enemyPieces, allPieces);
+    if(numCheckers < 2){
+        generatePawnMoves(myPawns, enemyPawns, emptySquares);
+        generateRookMoves(myRooks, enemyPieces, allPieces);
+        generateKnightMoves(myKnights, myPieces);
+        generateBishopMoves(myBishops, enemyPieces, allPieces);
+        generateQueenMoves(myQueens, enemyPieces, allPieces);
+    }
 
-    // cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
+    cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
 
-    // for(auto move : pseudoLegalMoves){
-    //     move.printMove();
-    // }
+    for(auto move : pseudoLegalMoves){
+        move.printMove();
+    }
 }
 
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){
@@ -79,6 +89,8 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
         singlePush = (friendlyPawns >> 8) & emptySquares;
     else
         singlePush = (friendlyPawns << 8) & emptySquares;
+
+    singlePush &= (captureMask | blockMask);
 
     // Add the single push to the pseudo legal moves
     int toSquare = 0;
@@ -97,6 +109,8 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     else
         doublePush = ((friendlyPawns & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
 
+    doublePush &= (captureMask | blockMask);
+
     // Add the double push to the pseudo legal moves
     toSquare = 0;
     while(doublePush){
@@ -113,6 +127,8 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
         leftCaptures = (friendlyPawns & ~leftMask) >> 9 & enemyPieces;
     else
         leftCaptures = (friendlyPawns & ~leftMask) << 9 & enemyPieces;
+
+    leftCaptures &= (captureMask | blockMask);
 
     // Add the left capture to the pseudo legal moves
     toSquare = 0;
@@ -131,6 +147,8 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     else
         rightCaptures = (friendlyPawns & ~rightMask) << 7 & enemyPieces;
 
+    rightCaptures &= (captureMask | blockMask);
+
     // Add the right capture to the pseudo legal moves
     toSquare = 0;
     while(rightCaptures){
@@ -146,18 +164,18 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
         int enPassantSquare = board.getEnPassantSquare();
         if(board.isWhiteToPlay()){
             // Left capture
-            if((friendlyPawns & ~leftMask) >> 9 & (1ULL << enPassantSquare))
+            if((friendlyPawns & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare + 9, enPassantSquare, board));
             // Right capture
-            if((friendlyPawns & ~rightMask) >> 7 & (1ULL << enPassantSquare))
+            if((friendlyPawns & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare + 7, enPassantSquare, board));
         }
         else {
             // Left capture
-            if((friendlyPawns & ~leftMask) << 9 & (1ULL << enPassantSquare))
+            if((friendlyPawns & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare - 9, enPassantSquare, board));
             // Right capture
-            if((friendlyPawns & ~rightMask) << 7 & (1ULL << enPassantSquare))
+            if((friendlyPawns & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare - 7, enPassantSquare, board));
         }
     }
@@ -249,6 +267,9 @@ void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPiec
             }
             rookMoves ^= 1ULL << fromSquare;
 
+            // In case in check
+            rookMoves &= (captureMask | blockMask);
+
             addBBToMoves(fromSquare, rookMoves);
         }
 
@@ -290,8 +311,11 @@ void MoveGenerator::generateKnightMoves(uint64_t friendlyKnights, uint64_t frien
             // Bottom Bottom moves
             knightMoves |= ((1ULL << fromSquare) & notFileA) << 15;
             knightMoves |= ((1ULL << fromSquare) & notFileH) << 17;
-
+            // Remove moves that would capture friendly pieces
             knightMoves &= ~friendlyPieces;
+
+            // In case in check
+            knightMoves &= (captureMask | blockMask);
 
             // Add the moves to the pseudo legal moves
             addBBToMoves(fromSquare, knightMoves);
@@ -393,7 +417,10 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
                 }
 
                 distance++;
-            }       
+            }
+
+            // In case in check
+            bishopMoves &= (captureMask | blockMask);
             
             // Add the moves to the pseudo legal moves
             addBBToMoves(fromSquare, bishopMoves);
@@ -777,4 +804,201 @@ uint64_t MoveGenerator::getKingAttacks(uint64_t oppKing){
     kingAttacks |= (oppKing & ~fileH) << 9;
 
     return kingAttacks;
+}
+
+uint64_t MoveGenerator::getAttackers(uint64_t piece){
+    uint64_t attackers = 0ULL;
+
+    // Pretend to be the piece
+    attackers |= getPawnAttackers(piece);
+    attackers |= getRookAttacks(piece, false) & enemyRooks;
+    attackers |= getKnightAttacks(piece) & enemyKnights;
+    attackers |= getBishopAttacks(piece, false) & enemyBishops;
+    attackers |= getQueenAttacks(piece, false) & enemyQueens;
+
+    return attackers;
+}
+
+uint64_t MoveGenerator::getPawnAttackers(uint64_t piece){
+    uint64_t leftMask = (board.isWhiteToPlay()) ? 0x0101010101010101 : 0x8080808080808080; // Relative
+    uint64_t rightMask = (board.isWhiteToPlay()) ? 0x8080808080808080 : 0x0101010101010101;
+
+    uint64_t attackers = 0ULL;
+
+    if(board.isWhiteToPlay()){
+        attackers |= (piece & ~leftMask) >> 9;
+        attackers |= (piece & ~rightMask) >> 7;
+    }
+    else{
+        attackers |= (piece & ~leftMask) << 9;
+        attackers |= (piece & ~rightMask) << 7;
+    }
+
+    attackers &= enemyPawns;
+
+    return attackers;
+}
+
+uint64_t MoveGenerator::getAttackerRay(uint64_t piece){
+    uint64_t ray = 0ULL;
+
+    // Check for rooklike attackers 
+    ray |= getRookAttackerRay(piece, enemyRooks);
+    ray |= getRookAttackerRay(piece, enemyQueens);
+    ray |= getBishopAttackerRay(piece, enemyBishops);
+    ray |= getBishopAttackerRay(piece, enemyQueens);
+
+    return ray;
+}
+
+uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers){
+    uint64_t attacker = checkers & attackers;
+    uint64_t ray = 0ULL;
+    
+    if(attacker){
+        int attackerSquare = 0;
+        int pieceSquare = 0;
+
+        uint64_t attackerCopy = attacker;
+        while(attackerCopy){
+            attackerSquare++;
+            attackerCopy >>= 1;
+        }
+
+        uint64_t pieceCopy = piece;
+        while(pieceCopy){
+            pieceSquare++;
+            pieceCopy >>= 1;
+        }
+
+        // Check if in same file or rank
+        if((attackerSquare % 8 != pieceSquare % 8) && (attackerSquare / 8 != pieceSquare / 8))
+            return ray;
+
+        int distance = 1;
+
+        // Check up
+        if(piece <= (attacker >> 8)){
+            while((ray & (piece << 8)) == 0){
+                ray |= attacker >> (8 * distance);
+                distance++;
+            }
+        }
+        // Check down
+        else if(piece >= (attacker << 8)){
+            while((ray & (piece >> 8)) == 0){
+                ray |= attacker << (8 * distance);
+                distance++;
+            }
+        }
+        // Check left
+        else if(piece <= (attacker >> 1)){
+            while((ray & (attacker >> 1)) == 0){
+                ray |= piece << distance;
+                distance++;
+            }
+        }
+        // Check right
+        else if(piece >= (attacker << 1)){
+            while((ray & (attacker << 1)) == 0){
+                ray |= piece >> distance;
+                distance++;
+            }
+        }
+    }
+
+    return ray;
+}
+
+uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers){
+    uint64_t attacker = checkers & attackers;
+    uint64_t ray = 0ULL;
+
+    if(attacker){
+        int attackerSquare = -1;
+        int pieceSquare = -1;
+
+        uint64_t attackerCopy = attacker;
+        while(attackerCopy){
+            attackerSquare++;
+            attackerCopy >>= 1;
+        }
+
+        uint64_t pieceCopy = piece;
+        while(pieceCopy){
+            pieceSquare++;
+            pieceCopy >>= 1;
+        }
+
+        // Check if in same diagonal
+        if(abs(attackerSquare % 8 - pieceSquare % 8) != abs(attackerSquare / 8 - pieceSquare / 8))
+            return ray;
+
+        int distance = 1;
+
+        // Check up left
+        if(piece < attacker && (pieceSquare % 8 < attackerSquare % 8)){
+            while((ray & (attacker >> 9)) == 0){
+                ray |= piece << (9 * distance);
+                distance++;
+            }
+        }
+        // Check up right
+        else if(piece < attacker && (pieceSquare % 8 > attackerSquare % 8)){
+            while((ray & (attacker >> 7)) == 0){
+                ray |= piece << (7 * distance);
+                distance++;
+            }
+        }
+        // Check down left
+        else if(piece > attacker && (pieceSquare % 8 < attackerSquare % 8)){
+            while((ray & (attacker << 7)) == 0){
+                ray |= piece >> (7 * distance);
+                distance++;
+            }
+        }
+        // Check down right
+        else if(piece > attacker && (pieceSquare % 8 > attackerSquare % 8)){
+            while((ray & (attacker << 9)) == 0){
+                ray |= piece >> (9 * distance);
+                distance++;
+            }
+        }        
+    }
+        
+    return ray;
+}
+
+void MoveGenerator::updateNumCheckers(){
+    numCheckers = 0;
+
+    uint64_t attackers = checkers;
+
+    while(attackers){
+        numCheckers += attackers & 1;
+        attackers >>= 1;
+    }
+}
+
+void MoveGenerator::updateCheckMasks(){
+    if(numCheckers == 0){
+        captureMask = 0xFFFFFFFFFFFFFFFF;
+        blockMask = 0xFFFFFFFFFFFFFFFF;
+    }
+    else if(numCheckers == 1){
+        captureMask = checkers;
+        if(board.getEnPassantSquare() != -1){
+            captureMask |= (1ULL << board.getEnPassantSquare());
+        }
+        blockMask = getAttackerRay(myKing);
+    }
+    else{
+        captureMask = 0ULL;
+        blockMask = 0ULL;
+    }
+
+    cout << "Capture mask: " << endl;
+    board.printBitBoard(captureMask);
+    cout << "Block mask: " << endl;
+    board.printBitBoard(blockMask);
 }

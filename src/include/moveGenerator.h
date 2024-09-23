@@ -27,7 +27,10 @@ private:
     uint64_t myPieces, enemyPieces;
     uint64_t emptySquares, allPieces;
     uint64_t kingDangerSquares; // Slider pieces see through king
-    uint64_t attackedSquares;
+    uint64_t attackedSquares, checkers;
+    uint64_t captureMask, blockMask; // For single checks
+
+    int numCheckers;
 
 private:
     void generatePawnMoves(uint64_t friendlyPawns, uint64_t oppPieces, uint64_t emptySquares);
@@ -46,6 +49,15 @@ private:
     uint64_t getBishopAttacks(uint64_t oppBishops, bool kingDanger);
     uint64_t getQueenAttacks(uint64_t oppQueens, bool kingDanger);
     uint64_t getKingAttacks(uint64_t oppKing);
+
+    uint64_t getAttackers(uint64_t piece);
+    uint64_t getPawnAttackers(uint64_t piece);
+    uint64_t getAttackerRay(uint64_t piece);
+    uint64_t getRookAttackerRay(uint64_t piece, uint64_t attackers);
+    uint64_t getBishopAttackerRay(uint64_t piece, uint64_t attackers);
+
+    void updateNumCheckers();
+    void updateCheckMasks();
 };
 
 #endif
