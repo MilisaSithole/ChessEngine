@@ -33,6 +33,7 @@ public:
     void moveUpdate(int fromSquare, int toSquare);
     int getEnPassantSquare(){return enPassantIdx;};
     int getPrevEnPassantSquare(){return prevEnPassantIdx;};
+    uint8_t getCastlingRights(){return castlingRights;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo);

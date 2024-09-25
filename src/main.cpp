@@ -22,7 +22,8 @@ int main(){
     // string fen = "4k3/3qr3/8/8/Q7/4Q3/8/2K5 b - - 1 31";
     // string fen = "4k3/8/6n1/4R3/8/8/8/2K5 b - d3 1 31";
     // string fen = "8/8/8/8/k2Pp2Q/8/8/3K4 b - d3 1 31";
-    string fen = "2kr3r/p1p1qpb1/bn2pnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R w KQ - 0 3";
+    // string fen = "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ - 3 9";
+    string fen = "7k/8/8/8/8/6qq/8/R3K2R w KQ - 0 3";
     // string fen = "4k3/8/4r3/8/4Q3/8/8/K7 b KQkq - 3 2";
     // fen = replaceAll(fen, "P", "1");
     // fen = replaceAll(fen, "R", "1");
@@ -30,7 +31,7 @@ int main(){
     // fen = replaceAll(fen, "B", "1");
     // fen = replaceAll(fen, "Q", "1");
     // fen = replaceAll(fen, "K", "1");
-    cout << fen << endl;
+    // cout << fen << endl;
 
     Chess chess(fen);
     // Chess chess("rnbqkbnr/pp2pppp/3p4/8/3NP3/8/PPP2PPP/RNBQKB1R w KQkq - 0 4");

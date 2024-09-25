@@ -13,15 +13,11 @@ using namespace std;
 class MoveGenerator{
 public:
     MoveGenerator(Board &board);
-    void generateLegalMoves();
-    void generatePseudoLegalMoves();
-    bool isMoveLegal(Move &move);
-    bool isInCheck();
+    void generateMoves();
 
 private:
     Board &board;
-    vector<Move> pseudoLegalMoves;
-    vector<Move> legalMoves;
+    vector<Move> moves;
 
     uint64_t myPawns, myRooks, myKnights, myBishops, myQueens, myKing;
     uint64_t enemyPawns, enemyRooks, enemyKnights, enemyBishops, enemyQueens, enemyKing;
