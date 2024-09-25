@@ -38,24 +38,27 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
     }
     allPieces = board.getAllBB();
     emptySquares = ~allPieces;
+    generatedMoves = 0ULL;
+
+    pinnedPieces = getPinnedPieces(myKing);
+
+    pinners = getPinners(pinnedPieces, myKing);
 
     // Generate pseudo legal moves
     generateLegalMoves();
+
+    cout << "Generated moves:" << endl;
+    board.printBitBoard(generatedMoves);
 }
 
 void MoveGenerator::generateLegalMoves(){
-    // cout << "\nAttacked squares: " << endl;
     kingDangerSquares = getAttackedSquares(true);
     attackedSquares = getAttackedSquares(false);
-    // board.printBitBoard(kingDangerSquares);
-
-    // cout << "Checkers: " << endl;
+    
     checkers = getAttackers(myKing);
-    // board.printBitBoard(checkers);
+
     updateNumCheckers();
     updateCheckMasks();
-
-    getAttackerRay(myKing);
 
     generatePseudoLegalMoves();
 }
@@ -63,7 +66,7 @@ void MoveGenerator::generateLegalMoves(){
 void MoveGenerator::generatePseudoLegalMoves(){
     generateKingMoves(myKing, enemyPieces, allPieces);
     if(numCheckers < 2){
-        generatePawnMoves(myPawns, enemyPawns, emptySquares);
+        generatePawnMoves(myPawns, enemyPieces, emptySquares);
         generateRookMoves(myRooks, enemyPieces, allPieces);
         generateKnightMoves(myKnights, myPieces);
         generateBishopMoves(myBishops, enemyPieces, allPieces);
@@ -71,7 +74,6 @@ void MoveGenerator::generatePseudoLegalMoves(){
     }
 
     cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
-
     for(auto move : pseudoLegalMoves){
         move.printMove();
     }
@@ -83,14 +85,16 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     uint64_t rightMask = (board.isWhiteToPlay()) ? 0x8080808080808080 : 0x0101010101010101;
     int direction = (board.isWhiteToPlay()) ? 8 : -8;
     
+    // NON PINNED PAWNS
     // Single push
     uint64_t singlePush;
     if(board.isWhiteToPlay())
-        singlePush = (friendlyPawns >> 8) & emptySquares;
+        singlePush = ((friendlyPawns & ~pinnedPieces) >> 8) & emptySquares;
     else
-        singlePush = (friendlyPawns << 8) & emptySquares;
+        singlePush = ((friendlyPawns & ~pinnedPieces) << 8) & emptySquares;
 
     singlePush &= (captureMask | blockMask);
+    generatedMoves |= singlePush;
 
     // Add the single push to the pseudo legal moves
     int toSquare = 0;
@@ -105,11 +109,12 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Double push
     uint64_t doublePush;
     if(board.isWhiteToPlay())
-        doublePush = ((friendlyPawns & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
+        doublePush = (((friendlyPawns & ~pinnedPieces) & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
     else
-        doublePush = ((friendlyPawns & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
+        doublePush = (((friendlyPawns & ~pinnedPieces) & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
 
     doublePush &= (captureMask | blockMask);
+    generatedMoves |= singlePush;
 
     // Add the double push to the pseudo legal moves
     toSquare = 0;
@@ -124,11 +129,12 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Left captures
     uint64_t leftCaptures;
     if(board.isWhiteToPlay())
-        leftCaptures = (friendlyPawns & ~leftMask) >> 9 & enemyPieces;
+        leftCaptures = ((friendlyPawns & ~pinnedPieces) & ~leftMask) >> 9 & enemyPieces;
     else
-        leftCaptures = (friendlyPawns & ~leftMask) << 9 & enemyPieces;
+        leftCaptures = ((friendlyPawns & ~pinnedPieces) & ~leftMask) << 9 & enemyPieces;
 
     leftCaptures &= (captureMask | blockMask);
+    generatedMoves |= singlePush;
 
     // Add the left capture to the pseudo legal moves
     toSquare = 0;
@@ -143,11 +149,12 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Right captures
     uint64_t rightCaptures;
     if(board.isWhiteToPlay())
-        rightCaptures = (friendlyPawns & ~rightMask) >> 7 & enemyPieces;
+        rightCaptures = ((friendlyPawns & ~pinnedPieces) & ~rightMask) >> 7 & enemyPieces;
     else
-        rightCaptures = (friendlyPawns & ~rightMask) << 7 & enemyPieces;
+        rightCaptures = ((friendlyPawns & ~pinnedPieces) & ~rightMask) << 7 & enemyPieces;
 
     rightCaptures &= (captureMask | blockMask);
+    generatedMoves |= singlePush;
 
     // Add the right capture to the pseudo legal moves
     toSquare = 0;
@@ -164,21 +171,111 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
         int enPassantSquare = board.getEnPassantSquare();
         if(board.isWhiteToPlay()){
             // Left capture
-            if((friendlyPawns & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
+            if(((friendlyPawns & ~pinnedPieces) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare + 9, enPassantSquare, board));
             // Right capture
-            if((friendlyPawns & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
+            if(((friendlyPawns & ~pinnedPieces) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare + 7, enPassantSquare, board));
+
+            generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask);
+            generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask);
         }
         else {
             // Left capture
-            if((friendlyPawns & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
+            if(((friendlyPawns & ~pinnedPieces) & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare - 9, enPassantSquare, board));
             // Right capture
-            if((friendlyPawns & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
+            if(((friendlyPawns & ~pinnedPieces) & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 pseudoLegalMoves.push_back(Move(enPassantSquare - 7, enPassantSquare, board));
+
+            generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask);
+            generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask);
         }
     }
+
+    // PINNED PAWNS
+    if(friendlyPawns & pinnedPieces){
+        uint64_t pinnedPawns = friendlyPawns & pinnedPieces;
+        int pinnedIdx = 0;
+
+        while(pinnedPawns){
+            if(pinnedPawns & 1){
+                // Get pinned ray
+                uint64_t pinnedRay = getPinnedRays(1ULL << pinnedIdx, pinners, myKing);
+
+                // Single push
+                if(board.isWhiteToPlay())
+                    singlePush = ((1ULL << pinnedIdx) >> 8) & emptySquares;
+                else
+                    singlePush = ((1ULL << pinnedIdx) << 8) & emptySquares;
+
+                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction, board));
+                generatedMoves |= singlePush & pinnedRay;
+
+                // Double push
+                if(board.isWhiteToPlay())
+                    doublePush = (((1ULL << pinnedIdx) & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
+                else
+                    doublePush = (((1ULL << pinnedIdx) & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
+
+                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - (2 * direction), board));
+                generatedMoves |= doublePush & pinnedRay;
+
+                // Left capture
+                if(board.isWhiteToPlay())
+                    leftCaptures = ((1ULL << pinnedIdx) & ~leftMask) >> 9 & enemyPieces;
+                else
+                    leftCaptures = ((1ULL << pinnedIdx) & ~leftMask) << 9 & enemyPieces;
+
+                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction - (direction % 7), board));
+                generatedMoves |= leftCaptures & pinnedRay;
+
+                // Right capture
+                if(board.isWhiteToPlay())
+                    rightCaptures = ((1ULL << pinnedIdx) & ~rightMask) >> 7 & enemyPieces;
+                else
+                    rightCaptures = ((1ULL << pinnedIdx) & ~rightMask) << 7 & enemyPieces;
+
+                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction + (direction % 7), board));
+                generatedMoves |= rightCaptures; // & pinnedRay;
+
+                // En passant capture
+                if(board.getEnPassantSquare() != -1){
+                    int enPassantSquare = board.getEnPassantSquare();
+                    if(board.isWhiteToPlay()){
+                        // Left capture
+                        if(((1ULL << pinnedIdx) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & pinnedRay)
+                            pseudoLegalMoves.push_back(Move(enPassantSquare + 9, enPassantSquare, board));
+                        // Right capture
+                        if(((1ULL << pinnedIdx) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & pinnedRay)
+                            pseudoLegalMoves.push_back(Move(enPassantSquare + 7, enPassantSquare, board));
+
+                        generatedMoves |= ((1ULL << pinnedIdx) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & pinnedRay;
+                        generatedMoves |= ((1ULL << pinnedIdx) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & pinnedRay;
+                    }
+                    else {
+                        // Left capture
+                        if(((1ULL << pinnedIdx) & ~leftMask) << 9 & (1ULL << enPassantSquare) & pinnedRay)
+                            pseudoLegalMoves.push_back(Move(enPassantSquare - 9, enPassantSquare, board));
+                        // Right capture
+                        if(((1ULL << pinnedIdx) & ~rightMask) << 7 & (1ULL << enPassantSquare) & pinnedRay)
+                            pseudoLegalMoves.push_back(Move(enPassantSquare - 7, enPassantSquare, board));
+
+                        generatedMoves |= ((1ULL << pinnedIdx) & ~leftMask) << 9 & (1ULL << enPassantSquare) & pinnedRay;
+                        generatedMoves |= ((1ULL << pinnedIdx) & ~rightMask) << 7 & (1ULL << enPassantSquare) & pinnedRay;
+                    }
+                }
+            }
+
+            pinnedPawns >>= 1;
+            pinnedIdx++;
+        }
+
+    }
+}
+
+bool MoveGenerator::checkForEnPassantDiscoveredCheck(uint64_t movingPawn, uint64_t capturedPawn){
+    
 }
 
 void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPieces, uint64_t allPieces){
@@ -188,8 +285,9 @@ void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPiec
     int fromSquare = 0;
     while(friendlyRooks){
         if(friendlyRooks & 1){
+            bool isPinned = (1ULL << fromSquare) & pinnedPieces;
             uint64_t rookMoves = 0ULL;
-            uint8_t direction = 0b1111; 
+            uint8_t direction = 0b1111;
             /*
                 0b0001 = Up, 
                 0b0010 = Down, 
@@ -265,11 +363,17 @@ void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPiec
 
                 distance++;
             }
-            rookMoves ^= 1ULL << fromSquare;
 
-            // In case in check
-            rookMoves &= (captureMask | blockMask);
+            if(isPinned){
+                uint64_t pinnedRay = getPinnedRays(1ULL << fromSquare, pinners, myKing);
+                rookMoves &= pinnedRay;
+            }
+            else
+                // In case in check
+                rookMoves &= (captureMask | blockMask);
 
+            // Add moves to pseudoLegalMoves
+            generatedMoves |= rookMoves;
             addBBToMoves(fromSquare, rookMoves);
         }
 
@@ -299,26 +403,31 @@ void MoveGenerator::generateKnightMoves(uint64_t friendlyKnights, uint64_t frien
 
     while(friendlyKnights){
         if(friendlyKnights & 1){
-            uint64_t knightMoves = 0ULL;
-            // Top Top moves
-            knightMoves |= ((1ULL << fromSquare) & notFileA) >> 17;
-            knightMoves |= ((1ULL << fromSquare) & notFileH) >> 15;
-            // Mid moves
-            knightMoves |= ((1ULL << fromSquare) & notFileAB) >> 10;
-            knightMoves |= ((1ULL << fromSquare) & notFileGH) >> 6;
-            knightMoves |= ((1ULL << fromSquare) & notFileAB) << 6;
-            knightMoves |= ((1ULL << fromSquare) & notFileGH) << 10;
-            // Bottom Bottom moves
-            knightMoves |= ((1ULL << fromSquare) & notFileA) << 15;
-            knightMoves |= ((1ULL << fromSquare) & notFileH) << 17;
-            // Remove moves that would capture friendly pieces
-            knightMoves &= ~friendlyPieces;
+            bool isPinned = (1ULL << fromSquare) & pinnedPieces;
+            if(!isPinned){
+                uint64_t knightMoves = 0ULL;
+                // Top Top moves
+                knightMoves |= ((1ULL << fromSquare) & notFileA) >> 17;
+                knightMoves |= ((1ULL << fromSquare) & notFileH) >> 15;
+                // Mid moves
+                knightMoves |= ((1ULL << fromSquare) & notFileAB) >> 10;
+                knightMoves |= ((1ULL << fromSquare) & notFileGH) >> 6;
+                knightMoves |= ((1ULL << fromSquare) & notFileAB) << 6;
+                knightMoves |= ((1ULL << fromSquare) & notFileGH) << 10;
+                // Bottom Bottom moves
+                knightMoves |= ((1ULL << fromSquare) & notFileA) << 15;
+                knightMoves |= ((1ULL << fromSquare) & notFileH) << 17;
+                // Remove moves that would capture friendly pieces
+                knightMoves &= ~friendlyPieces;
 
-            // In case in check
-            knightMoves &= (captureMask | blockMask);
+                // In case in check
+                knightMoves &= (captureMask | blockMask);
 
-            // Add the moves to the pseudo legal moves
-            addBBToMoves(fromSquare, knightMoves);
+                // Add the moves to the pseudo legal moves
+                generatedMoves |= knightMoves;
+                addBBToMoves(fromSquare, knightMoves);
+
+            }
         }
 
         friendlyKnights >>= 1;
@@ -335,6 +444,7 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
     int fromSquare = 0;
     while(friendlyBishops){
         if(friendlyBishops & 1){
+            bool isPinned = (1ULL << fromSquare) & pinnedPieces;
             uint64_t bishopMoves = 0ULL;
             uint8_t direction = 0b1111; 
             /*
@@ -419,10 +529,16 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
                 distance++;
             }
 
-            // In case in check
-            bishopMoves &= (captureMask | blockMask);
+            if(isPinned){
+                uint64_t pinnedRay = getPinnedRays(1ULL << fromSquare, pinners, myKing);
+                bishopMoves &= pinnedRay;
+            }
+            else
+                // In case in check
+                bishopMoves &= (captureMask | blockMask);
             
             // Add the moves to the pseudo legal moves
+            generatedMoves |= bishopMoves;
             addBBToMoves(fromSquare, bishopMoves);
         }
 
@@ -467,11 +583,8 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             kingMoves &= ~kingDangerSquares;
 
             // Add moves to pseudo legal moves
+            generatedMoves |= kingMoves;
             addBBToMoves(fromSquare, kingMoves);
-
-            // TODO: remove
-            cout << "King moves: " << endl;
-            board.printBitBoard(kingMoves);
 
             return; // There should only be one king on the board
         }
@@ -480,6 +593,8 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
         friendlyKing >>= 1;
     }
 }
+
+
 
 void MoveGenerator::addBBToMoves(int fromSquare, uint64_t movesBB){
     int toSquare = 0;
@@ -540,13 +655,13 @@ uint64_t MoveGenerator::getPawnAttacks(uint64_t oppPawns){
     return pawnAttacks;
 }
 
-uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger){
+uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger, uint64_t filterOut){
     uint64_t fileA = 0x0101010101010101;
     uint64_t fileH = 0x8080808080808080;
 
-    uint64_t emptyAndKing = emptySquares;
-    uint64_t allButKing = allPieces;
-    uint64_t mineButKing = myPieces;
+    uint64_t emptyAndKing = emptySquares | filterOut;
+    uint64_t allButKing = allPieces & ~filterOut;
+    uint64_t mineButKing = myPieces & ~filterOut;
     if(kingDanger){
         emptyAndKing |= myKing;
         allButKing &= ~myKing;
@@ -666,15 +781,15 @@ uint64_t MoveGenerator::getKnightAttacks(uint64_t oppKnights){
     return knightAttacks;
 }
 
-uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops, bool kingDanger){
+uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops, bool kingDanger, uint64_t filterOut){
     uint64_t fileA = 0x0101010101010101;
     uint64_t fileH = 0x8080808080808080;
     uint64_t rank1 = 0xFF00000000000000;
     uint64_t rank8 = 0x00000000000000FF;
 
-    uint64_t emptyAndKing = emptySquares;
-    uint64_t allButKing = allPieces;
-    uint64_t mineButKing = myPieces;
+    uint64_t emptyAndKing = emptySquares | filterOut;
+    uint64_t allButKing = allPieces & ~filterOut;
+    uint64_t mineButKing = myPieces & ~filterOut;
     if(kingDanger){
         emptyAndKing |= myKing;
         allButKing &= ~myKing;
@@ -774,11 +889,11 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops, bool kingDanger){
     return bishopAttacks;
 }
 
-uint64_t MoveGenerator::getQueenAttacks(uint64_t oppQueens, bool kingDanger){
+uint64_t MoveGenerator::getQueenAttacks(uint64_t oppQueens, bool kingDanger, uint64_t filterOut){
     uint64_t queenAttacks = 0ULL;
 
-    queenAttacks |= getRookAttacks(oppQueens, kingDanger);
-    queenAttacks |= getBishopAttacks(oppQueens, kingDanger);
+    queenAttacks |= getRookAttacks(oppQueens, kingDanger, filterOut);
+    queenAttacks |= getBishopAttacks(oppQueens, kingDanger, filterOut);
 
     return queenAttacks;
 }
@@ -805,6 +920,8 @@ uint64_t MoveGenerator::getKingAttacks(uint64_t oppKing){
 
     return kingAttacks;
 }
+
+
 
 uint64_t MoveGenerator::getAttackers(uint64_t piece){
     uint64_t attackers = 0ULL;
@@ -839,25 +956,27 @@ uint64_t MoveGenerator::getPawnAttackers(uint64_t piece){
     return attackers;
 }
 
-uint64_t MoveGenerator::getAttackerRay(uint64_t piece){
+uint64_t MoveGenerator::getAttackerRay(uint64_t piece, uint64_t attackType){
     uint64_t ray = 0ULL;
 
-    // Check for rooklike attackers 
-    ray |= getRookAttackerRay(piece, enemyRooks);
-    ray |= getRookAttackerRay(piece, enemyQueens);
-    ray |= getBishopAttackerRay(piece, enemyBishops);
-    ray |= getBishopAttackerRay(piece, enemyQueens);
+    ray |= getRookAttackerRay(piece, enemyRooks, attackType);
+    ray |= getRookAttackerRay(piece, enemyQueens, attackType);
+    ray |= getBishopAttackerRay(piece, enemyBishops, attackType);
+    ray |= getBishopAttackerRay(piece, enemyQueens, attackType);
 
     return ray;
 }
 
-uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers){
-    uint64_t attacker = checkers & attackers;
+uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, uint64_t attackType){
+    uint64_t attacker = attackers;
+    if(attackType == checkers)
+        attacker &= checkers;
     uint64_t ray = 0ULL;
     
     if(attacker){
-        int attackerSquare = 0;
-        int pieceSquare = 0;
+        // Get attacker and piece squares
+        int attackerSquare = -1;
+        int pieceSquare = -1;
 
         uint64_t attackerCopy = attacker;
         while(attackerCopy){
@@ -910,8 +1029,8 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers){
     return ray;
 }
 
-uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers){
-    uint64_t attacker = checkers & attackers;
+uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers, uint64_t attackType){
+    uint64_t attacker = attackType & attackers;
     uint64_t ray = 0ULL;
 
     if(attacker){
@@ -969,6 +1088,69 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers)
     return ray;
 }
 
+
+
+uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
+    uint64_t pieceRays = 0ULL;
+    pieceRays |= getQueenAttacks(piece, false);
+
+    uint64_t sliderAttackerRays = 0ULL;
+    sliderAttackerRays |= getRookAttacks(enemyRooks, false);
+    sliderAttackerRays |= getBishopAttacks(enemyBishops, false);
+    sliderAttackerRays |= getQueenAttacks(enemyQueens, false);
+
+    return pieceRays & sliderAttackerRays & myPieces;
+}
+
+uint64_t MoveGenerator::getPinners(uint64_t pinned, uint64_t piece){
+    if(!pinned)
+        return 0ULL;
+
+    uint64_t pinners = 0ULL;
+
+    // Use 'Piece' a slider, filtering out pinned pieces to get attack moves
+    pinners |= getQueenAttacks(piece, false, pinned);
+
+    // And with opp sliders
+    pinners &= enemyRooks | enemyBishops | enemyQueens;
+
+    return pinners;
+}
+
+uint64_t MoveGenerator::getPinnedRays(uint64_t pinned, uint64_t pinners, uint64_t piece){
+    if(!pinned) 
+        return 0xFFFFFFFFFFFFFFFF;
+
+    uint64_t pinnedRay = 0ULL;
+    uint64_t pinnersCopy = pinners;
+    
+    // Loop through pinners
+    int fromSquare = 0;
+    while(pinnersCopy){
+        if(pinnersCopy & 1){
+            // Get pinner ray to piece
+            if((1ULL << fromSquare) & enemyRooks)
+                pinnedRay |= getRookAttackerRay(piece, 1ULL << fromSquare, pinners);
+            else if((1ULL << fromSquare) & enemyBishops)
+                pinnedRay |= getBishopAttackerRay(piece, 1ULL << fromSquare, pinners);
+            else if((1ULL << fromSquare) & enemyQueens){
+                pinnedRay |= getRookAttackerRay(piece, 1ULL << fromSquare, pinners);
+                pinnedRay |= getBishopAttackerRay(piece, 1ULL << fromSquare, pinners);
+            }
+
+            if(pinnedRay & pinned)
+                return pinnedRay | (1ULL << fromSquare);
+            else
+                pinnedRay = 0ULL;
+        }
+
+        pinnersCopy >>= 1;
+        fromSquare++;
+    }
+
+    return 0xFFFFFFFFFFFFFFFF;
+}
+
 void MoveGenerator::updateNumCheckers(){
     numCheckers = 0;
 
@@ -990,15 +1172,10 @@ void MoveGenerator::updateCheckMasks(){
         if(board.getEnPassantSquare() != -1){
             captureMask |= (1ULL << board.getEnPassantSquare());
         }
-        blockMask = getAttackerRay(myKing);
+        blockMask = getAttackerRay(myKing, checkers);
     }
     else{
         captureMask = 0ULL;
         blockMask = 0ULL;
     }
-
-    cout << "Capture mask: " << endl;
-    board.printBitBoard(captureMask);
-    cout << "Block mask: " << endl;
-    board.printBitBoard(blockMask);
 }
