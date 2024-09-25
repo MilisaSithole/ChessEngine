@@ -750,6 +750,11 @@ uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger, uint6
         mineButKing &= ~myKing;
     }
 
+    cout << "oppRooks:" << endl;
+    board.printBitBoard(oppRooks);
+    cout << "Filter out:" << endl;
+    board.printBitBoard(filterOut);
+
     uint64_t rookAttacks = 0ULL;
 
     int fromSquare = 0;
@@ -1173,21 +1178,38 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
 
 
 uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
+    uint64_t pinnedRays;
+
     uint64_t pieceRays = 0ULL;
-    pieceRays |= getQueenAttacks(piece, false);
+    cout << "+++++++++++++" << endl;
+    pieceRays |= getQueenAttacks(piece, false, myPieces & ~myKing); // Remove all my pieces
 
     cout << "King rays for pins:" << endl;
     board.printBitBoard(pieceRays);
 
     uint64_t sliderAttackerRays = 0ULL;
-    sliderAttackerRays |= getRookAttacks(enemyRooks & ~checkers, false);
-    sliderAttackerRays |= getBishopAttacks(enemyBishops & ~checkers, false);
-    sliderAttackerRays |= getQueenAttacks(enemyQueens & ~checkers, false);
+    sliderAttackerRays |= getRookAttacks(enemyRooks & ~checkers, false, myPieces & ~myKing);
+    sliderAttackerRays |= getBishopAttacks(enemyBishops & ~checkers, false, myPieces & ~myKing);
+    sliderAttackerRays |= getQueenAttacks(enemyQueens & ~checkers, false, myPieces & ~myKing);
 
     cout << "Slider attacker rays for pins:" << endl;
     board.printBitBoard(sliderAttackerRays);
 
-    return pieceRays & sliderAttackerRays & myPieces;
+    pinnedRays = pieceRays & sliderAttackerRays;
+
+    // Put my pieces back
+    pieceRays = 0ULL;
+    pinnedRays &= getQueenAttacks(piece, false); // Remove all my pieces
+
+    cout << "King rays for pins:" << endl;
+    board.printBitBoard(pieceRays);
+
+    sliderAttackerRays = 0ULL;
+    pinnedRays &= getRookAttacks(enemyRooks & ~checkers, false);
+    pinnedRays &= getBishopAttacks(enemyBishops & ~checkers, false);
+    pinnedRays &= getQueenAttacks(enemyQueens & ~checkers, false);
+
+    return pinnedRays;
 }
 
 uint64_t MoveGenerator::getPinners(uint64_t pinned, uint64_t piece){
