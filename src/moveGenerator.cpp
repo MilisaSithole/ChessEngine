@@ -40,6 +40,13 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
     emptySquares = ~allPieces;
     generatedMoves = 0ULL;
 
+    // Check for check
+    kingDangerSquares = getAttackedSquares(true);
+    attackedSquares = getAttackedSquares(false);    
+    checkers = getAttackers(myKing);
+    updateNumCheckers();
+    updateCheckMasks();
+
     pinnedPieces = getPinnedPieces(myKing);
 
     pinners = getPinners(pinnedPieces, myKing);
@@ -60,14 +67,6 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
 }
 
 void MoveGenerator::generateLegalMoves(){
-    kingDangerSquares = getAttackedSquares(true);
-    attackedSquares = getAttackedSquares(false);
-    
-    checkers = getAttackers(myKing);
-
-    updateNumCheckers();
-    updateCheckMasks();
-
     generatePseudoLegalMoves();
 }
 
@@ -81,12 +80,15 @@ void MoveGenerator::generatePseudoLegalMoves(){
         generateQueenMoves(myQueens, enemyPieces, allPieces);
     }
 
+    // Sort moves
+    sort(pseudoLegalMoves.begin(), pseudoLegalMoves.end(), [](Move &a, Move &b) {
+        return a.getUci() < b.getUci();
+    });
     cout << "Number of pseudo legal moves generated: " << pseudoLegalMoves.size() << endl;
     for(auto move : pseudoLegalMoves){
         move.printMove();
     }
 }
-
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){
     uint64_t startingRank = (board.isWhiteToPlay()) ? 0x00FF000000000000 : 0x000000000000FF00;
     uint64_t leftMask = (board.isWhiteToPlay()) ? 0x0101010101010101 : 0x8080808080808080; // Relative
@@ -114,20 +116,24 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
         toSquare++;
     }
 
+    cout << "Empty squares:" << endl;
+    board.printBitBoard(emptySquares);
+    cout << "Starting rank:" << endl;
+    board.printBitBoard(startingRank);
+    cout << "Friendly pawns:" << endl;
+    board.printBitBoard(friendlyPawns);
+    cout << "Pinned pieces:" << endl;
+    board.printBitBoard(pinnedPieces);
+
     // Double push
     uint64_t doublePush;
     if(board.isWhiteToPlay())
-        doublePush = (((friendlyPawns & ~pinnedPieces) & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
+        doublePush = ((friendlyPawns & ~pinnedPieces & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
     else
-        doublePush = (((friendlyPawns & ~pinnedPieces) & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
+        doublePush = ((friendlyPawns & ~pinnedPieces & startingRank) << 16) & (emptySquares << 8) & emptySquares;
 
     doublePush &= (captureMask | blockMask); // In case in check
     generatedMoves |= doublePush;
-
-    cout << "Before double push" << endl;
-    board.printBitBoard(friendlyPawns & ~pinnedPieces & startingRank);
-    cout << "After double push" << endl;
-    board.printBitBoard(doublePush);
 
     // Add the double push to the pseudo legal moves
     toSquare = 0;
@@ -228,17 +234,19 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
                 else
                     singlePush = ((1ULL << pinnedIdx) << 8) & emptySquares;
 
-                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction, board));
                 generatedMoves |= singlePush & pinnedRay;
+                if(singlePush & pinnedRay)
+                    pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction, board));
 
                 // Double push
                 if(board.isWhiteToPlay())
                     doublePush = (((1ULL << pinnedIdx) & startingRank) >> 16) & (emptySquares >> 8) & emptySquares;
                 else
-                    doublePush = (((1ULL << pinnedIdx) & startingRank) << 16) & (emptySquares >> 8) & emptySquares;
+                    doublePush = (((1ULL << pinnedIdx) & startingRank) << 16) & (emptySquares << 8) & emptySquares;
 
-                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - (2 * direction), board));
                 generatedMoves |= doublePush & pinnedRay;
+                if(doublePush & pinnedRay)
+                    pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - (2 * direction), board));
 
                 // Left capture
                 if(board.isWhiteToPlay())
@@ -246,8 +254,9 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
                 else
                     leftCaptures = ((1ULL << pinnedIdx) & ~leftMask) << 9 & enemyPieces;
 
-                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction - (direction % 7), board));
                 generatedMoves |= leftCaptures & pinnedRay;
+                if(leftCaptures & pinnedRay)
+                    pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction - (direction % 7), board));
 
                 // Right capture
                 if(board.isWhiteToPlay())
@@ -255,8 +264,9 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
                 else
                     rightCaptures = ((1ULL << pinnedIdx) & ~rightMask) << 7 & enemyPieces;
 
-                pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction + (direction % 7), board));
-                generatedMoves |= rightCaptures; // & pinnedRay;
+                generatedMoves |= rightCaptures & pinnedRay;
+                if(rightCaptures & pinnedRay)
+                    pseudoLegalMoves.push_back(Move(pinnedIdx, pinnedIdx - direction + (direction % 7), board));
 
                 // En passant capture
                 if(board.getEnPassantSquare() != -1){
@@ -1140,6 +1150,8 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
 
 
 uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
+    uint64_t pinnedRays = 0ULL;
+
     uint64_t pieceRays = 0ULL;
     pieceRays |= getQueenAttacks(piece, false);
 
@@ -1147,9 +1159,9 @@ uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
     board.printBitBoard(pieceRays);
 
     uint64_t sliderAttackerRays = 0ULL;
-    sliderAttackerRays |= getRookAttacks(enemyRooks, false);
-    sliderAttackerRays |= getBishopAttacks(enemyBishops, false);
-    sliderAttackerRays |= getQueenAttacks(enemyQueens, false);
+    sliderAttackerRays |= getRookAttacks(enemyRooks & ~checkers, false);
+    sliderAttackerRays |= getBishopAttacks(enemyBishops & ~checkers, false);
+    sliderAttackerRays |= getQueenAttacks(enemyQueens & ~checkers, false);
 
     cout << "Slider attacker rays for pins:" << endl;
     board.printBitBoard(sliderAttackerRays);

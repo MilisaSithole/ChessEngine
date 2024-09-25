@@ -56,3 +56,7 @@ Piece Move::getMovedPiece(){
 bool Move::isPawnMovedOrCaptured(){
     return (movedPiece.getType() == PieceType::Pawn) || (capturedPiece.getType() == PieceType::Pawn);
 }
+
+string Move::getUci(){
+    return indexToAlgebraic(moveFrom) + indexToAlgebraic(moveTo);
+}

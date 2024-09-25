@@ -31,6 +31,7 @@ public:
     int getToSquare();
     Piece getMovedPiece();
     bool isPawnMovedOrCaptured();
+    string getUci();
 
 private:
     int moveFrom;
