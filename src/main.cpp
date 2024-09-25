@@ -21,7 +21,8 @@ int main(){
     // string fen = "8/4k3/8/8/4R3/8/8/4K3 b - - 1 31";
     // string fen = "4k3/3qr3/8/8/Q7/4Q3/8/2K5 b - - 1 31";
     // string fen = "4k3/8/6n1/4R3/8/8/8/2K5 b - d3 1 31";
-    string fen = "8/8/8/8/k2Pp2Q/8/8/3K4 b - d3 1 31";
+    // string fen = "8/8/8/8/k2Pp2Q/8/8/3K4 b - d3 1 31";
+    string fen = "r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQkq - 3 2";
     // fen = replaceAll(fen, "P", "1");
     // fen = replaceAll(fen, "R", "1");
     // fen = replaceAll(fen, "N", "1");
