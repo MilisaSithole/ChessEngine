@@ -85,6 +85,7 @@ void MoveGenerator::generateMoves(){
         move.printMove();
     }
 }
+
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){
     uint64_t startingRank = (board.isWhiteToPlay()) ? 0x00FF000000000000 : 0x000000000000FF00;
     uint64_t leftMask = (board.isWhiteToPlay()) ? 0x0101010101010101 : 0x8080808080808080; // Relative
@@ -291,7 +292,6 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
 }
 
 bool MoveGenerator::checkForEnPassantDiscoveredCheck(uint64_t movingPawn, uint64_t capturedPawn){
-    // TODO
     uint64_t fileA = 0x0101010101010101;
     uint64_t fileH = 0x8080808080808080;
     uint64_t emptyFilter = emptySquares | movingPawn | capturedPawn;
@@ -750,11 +750,6 @@ uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger, uint6
         mineButKing &= ~myKing;
     }
 
-    cout << "oppRooks:" << endl;
-    board.printBitBoard(oppRooks);
-    cout << "Filter out:" << endl;
-    board.printBitBoard(filterOut);
-
     uint64_t rookAttacks = 0ULL;
 
     int fromSquare = 0;
@@ -841,7 +836,7 @@ uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger, uint6
         oppRooks >>= 1;
         fromSquare++;
     }
-
+        
     return rookAttacks;
 }
 
@@ -1178,38 +1173,70 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
 
 
 uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
-    uint64_t pinnedRays;
-
+    // Remove all my pieces besides king
     uint64_t pieceRays = 0ULL;
-    cout << "+++++++++++++" << endl;
-    pieceRays |= getQueenAttacks(piece, false, myPieces & ~myKing); // Remove all my pieces
+    uint64_t kingNoPieces = getQueenAttacks(piece, false, myPieces & ~myKing); // Get rays to attackers
+    cout << "King rays [no pieces]:" << endl;
+    board.printBitBoard(kingNoPieces);
 
-    cout << "King rays for pins:" << endl;
-    board.printBitBoard(pieceRays);
+    // Get rays to my king
+    uint64_t oppsNoPieces = 0ULL;
 
-    uint64_t sliderAttackerRays = 0ULL;
-    sliderAttackerRays |= getRookAttacks(enemyRooks & ~checkers, false, myPieces & ~myKing);
-    sliderAttackerRays |= getBishopAttacks(enemyBishops & ~checkers, false, myPieces & ~myKing);
-    sliderAttackerRays |= getQueenAttacks(enemyQueens & ~checkers, false, myPieces & ~myKing);
+    bool rookAttacksKing = false;
+    bool bishopAttacksKing = false;
+    bool queenAttacksKing = false;
 
-    cout << "Slider attacker rays for pins:" << endl;
-    board.printBitBoard(sliderAttackerRays);
+    uint64_t rooksNoPieces = getRookAttacks(enemyRooks & ~checkers, false, myPieces & ~myKing);
+    if(rooksNoPieces & myKing){
+        oppsNoPieces |= rooksNoPieces;
+        rookAttacksKing = true;
+    }
+    uint64_t bishopsNoPieces =  getBishopAttacks(enemyBishops & ~checkers, false, myPieces & ~myKing);
+    if(bishopsNoPieces & myKing){
+        oppsNoPieces |= bishopsNoPieces;
+        bishopAttacksKing = true;
+    }
+    uint64_t queensNoPieces = getQueenAttacks(enemyQueens & ~checkers, false, myPieces & ~myKing);
+    if(queensNoPieces & myKing){
+        oppsNoPieces |= queensNoPieces;
+        queenAttacksKing = true;
+    }
 
-    pinnedRays = pieceRays & sliderAttackerRays;
+    cout << "Rooks [no pieces]:" << endl;
+    board.printBitBoard(rooksNoPieces);
+    cout << "Bishops [no pieces]:" << endl;
+    board.printBitBoard(bishopsNoPieces);
+    cout << "Queens [no pieces]:" << endl;
+    board.printBitBoard(queensNoPieces);
+
+    cout << "Opp rays [no pieces]:" << endl;
+    board.printBitBoard(oppsNoPieces);
+
+    cout << "No pieces intersection:" << endl;
+    board.printBitBoard(kingNoPieces & oppsNoPieces);
 
     // Put my pieces back
     pieceRays = 0ULL;
-    pinnedRays &= getQueenAttacks(piece, false); // Remove all my pieces
+    uint64_t kingWPieces = getQueenAttacks(piece, false); // Intersection with 'pinned' piece from king
+    cout << "King rays [pieces]:" << endl;
+    board.printBitBoard(kingWPieces);
 
-    cout << "King rays for pins:" << endl;
-    board.printBitBoard(pieceRays);
+    uint64_t oppWPieces = 0ULL;
+    // Intersection with 'pinned' piece from attackers
+    if(rookAttacksKing)
+        oppWPieces |= getRookAttacks(enemyRooks & ~checkers, false);
+    if(bishopAttacksKing)
+        oppWPieces |= getBishopAttacks(enemyBishops & ~checkers, false);
+    if(queenAttacksKing)
+        oppWPieces |= getQueenAttacks(enemyQueens & ~checkers, false);
 
-    sliderAttackerRays = 0ULL;
-    pinnedRays &= getRookAttacks(enemyRooks & ~checkers, false);
-    pinnedRays &= getBishopAttacks(enemyBishops & ~checkers, false);
-    pinnedRays &= getQueenAttacks(enemyQueens & ~checkers, false);
+    cout << "Opp rays [pieces]:" << endl;
+    board.printBitBoard(oppWPieces);
 
-    return pinnedRays;
+    cout << "Intersection:" << endl;
+    board.printBitBoard(kingNoPieces & kingWPieces & oppsNoPieces & oppWPieces);
+
+    return kingNoPieces & kingWPieces & oppsNoPieces & oppWPieces; // Actually return the pinned pieces
 }
 
 uint64_t MoveGenerator::getPinners(uint64_t pinned, uint64_t piece){
