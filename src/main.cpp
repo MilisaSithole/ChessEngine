@@ -16,7 +16,8 @@ std::string replaceAll(std::string str, const std::string& from, const std::stri
 }
 
 int main(){
-    Chess chess("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+    Chess chess("r3k2r/8/8/8/5pP1/8/8/R3K2R b KQkq g3 0 1");
+    // Chess chess;
     chess.printBoard();
 
     string uci;

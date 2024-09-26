@@ -156,6 +156,13 @@ bool Board::isWhiteToPlay(){
 
 void Board::moveUpdate(int fromSquare, int toSquare){
     // TODO: add en passant captures
+    if(board[fromSquare].getType() == PieceType::Pawn && toSquare == enPassantIdx){
+        int direction = (isWhitesTurn) ? 8 : -8;
+        
+        board[toSquare + direction] = Piece();
+        updateBitBoards(toSquare + direction, -1);
+
+    }
 
     // Castling rights
     if(board[fromSquare].getType() == PieceType::King){
@@ -191,12 +198,13 @@ void Board::moveUpdate(int fromSquare, int toSquare){
 
     // En passant
     prevEnPassantIdx = enPassantIdx;
+    enPassantIdx = -1;
     if(board[fromSquare].getType() == PieceType::Pawn){
+        cout << "En passant update: " << (fromSquare / 8) << " " << (toSquare / 8) << endl;
         if(abs((fromSquare / 8) - (toSquare / 8)) == 2)
             enPassantIdx = (fromSquare + toSquare) / 2;
     }
-    else
-        enPassantIdx = -1;
+        
 
     // Half move clock
     if(board[fromSquare].getType() == PieceType::Pawn || 
@@ -259,6 +267,12 @@ void Board::setBitBoards(){
 }
 
 void Board::updateBitBoards(int fromSquare, int toSquare){
+    if(toSquare == -1){
+        if(board[fromSquare].isWhite())
+            whitePawnsBB &= ~(1ULL << fromSquare);
+
+        return;
+    }
 
     Piece movingPiece = board[fromSquare];
     Piece capturedPiece = board[toSquare];
