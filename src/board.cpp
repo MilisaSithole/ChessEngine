@@ -1,12 +1,12 @@
 #include "include/board.h"
 #include <vector>
 
-Board::Board(const string &fen){
+Board::Board(string fen){
     initBoard(fen);
     setBitBoards();
 }
 
-void Board::initBoard(const string &fen){
+void Board::initBoard(string fen){
     parseFen(fen);
 }
 
@@ -18,7 +18,7 @@ void Board::printBoard(){
     }
 }
 
-void Board::parseFen(const string &fen){
+void Board::parseFen(string fen){
     // Split fen into tokens
     vector<string> fenTokens;
     string fenToken;
@@ -69,25 +69,27 @@ string Board::getFen(){
     string fen = "";
 
     // Piece placements 
+    int emptyCellCount = 0;
     for(int i = 0; i < 64; i++){
-        int emptyCellCOunt = 0;
+
+        
 
         if(board[i].isEmpty()){
-            emptyCellCOunt++;
-            continue;
+            emptyCellCount++;
         }
+        else{
+            if(emptyCellCount > 0){
+                fen += to_string(emptyCellCount);
+                emptyCellCount = 0;
+            }
 
-        if(emptyCellCOunt > 0){
-            fen += to_string(emptyCellCOunt);
-            emptyCellCOunt = 0;
+            fen += board[i].symbol();
         }
-
-        fen += board[i].symbol();
 
         if(i % 8 == 7){
-            if(emptyCellCOunt > 0){
-                fen += to_string(emptyCellCOunt);
-                emptyCellCOunt = 0;
+            if(emptyCellCount > 0){
+                fen += to_string(emptyCellCount);
+                emptyCellCount = 0;
             }
 
             if(i != 63)
@@ -132,20 +134,12 @@ Piece Board::getPieceAt(int square){
     return board[square];
 }
 
-void Board::makeMove(int fromSquare, int toSquare){
-    // Update bit boards
-    updateBitBoards(fromSquare, toSquare);
-
-    // Check for double pawn push
-    if(board[fromSquare].getType() == PieceType::Pawn && abs(fromSquare - toSquare) == 16){
-        enPassantIdx = (fromSquare + toSquare) / 2;
-    }
-    else
-        enPassantIdx = -1;
+void Board::makeMove(int fromSquare, int toSquare){    
+    moveUpdate(fromSquare, toSquare);
 
     board[toSquare] = board[fromSquare];
     board[fromSquare] = Piece();
-
+    updateBitBoards(fromSquare, toSquare);
 }
 
 int Board::algebraicToIndex(string &square){
@@ -156,21 +150,66 @@ string Board::idxToAlgebraic(int &idx){
     return string(1, 'a' + idx % 8) + to_string(8 - idx / 8);
 }
 
-bool  Board::isWhiteToPlay(){
+bool Board::isWhiteToPlay(){
     return isWhitesTurn;
 }
 
 void Board::moveUpdate(int fromSquare, int toSquare){
+    // TODO: add en passant captures
 
+    // Castling rights
+    if(board[fromSquare].getType() == PieceType::King){
+        if(isWhitesTurn){
+            if((fromSquare == 60) && (toSquare == 62) && (castlingRights & 0b0001)){
+                updateBitBoards(63, 61);
+                board[61] = board[63];
+                board[63] = Piece();
+                castlingRights &= 0b1100;
+            }
+            else if((fromSquare == 60) && (toSquare == 58) && (castlingRights & 0b0010)){
+                updateBitBoards(56, 59);
+                board[59] = board[56];
+                board[56] = Piece();
+                castlingRights &= 0b1100;   
+            }
+        }
+        else{
+            if((fromSquare == 4) && (toSquare == 6) && (castlingRights & 0b0001)){
+                updateBitBoards(7, 5);
+                board[5] = board[7];
+                board[7] = Piece();
+                castlingRights &= 0b0011;
+            }
+            else if((fromSquare == 4) && (toSquare == 2) && (castlingRights & 0b0010)){
+                updateBitBoards(0, 3);
+                board[3] = board[0];
+                board[0] = Piece();
+                castlingRights &= 0b0011;
+            }
+        }
+    }
+
+    // En passant
+    prevEnPassantIdx = enPassantIdx;
+    if(board[fromSquare].getType() == PieceType::Pawn){
+        if(abs((fromSquare / 8) - (toSquare / 8)) == 2)
+            enPassantIdx = (fromSquare + toSquare) / 2;
+    }
+    else
+        enPassantIdx = -1;
+
+    // Half move clock
     if(board[fromSquare].getType() == PieceType::Pawn || 
-       board[toSquare].getType() == PieceType::Pawn)
+       board[toSquare].getType() != PieceType::None)
         halfMoveClock = 0;
     else
         halfMoveClock++;
 
+    // Full move counter
     if(!isWhitesTurn)
         fullMoveNumber++;
 
+    // Change turn
     isWhitesTurn = !isWhitesTurn;
 }
 

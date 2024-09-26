@@ -20,10 +20,10 @@ const uint8_t BLACK_QUEENSIDE_CASTLE = 0x08;
 
 class Board{
 public:
-    Board(const string &fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    void initBoard(const string &fen);
+    Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    void initBoard(string fen);
     void printBoard();
-    void parseFen(const string &fen);
+    void parseFen(string fen);
     string getFen();
     Piece getPieceAt(int square);
     void makeMove(int fromSquare, int toSquare);
@@ -34,6 +34,8 @@ public:
     int getEnPassantSquare(){return enPassantIdx;};
     int getPrevEnPassantSquare(){return prevEnPassantIdx;};
     uint8_t getCastlingRights(){return castlingRights;};
+    uint8_t getWhiteCastlingRights(){return castlingRights & 0b0011;};
+    uint8_t getBlackCastlingRights(){return castlingRights & 0b1100;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo);

@@ -16,32 +16,22 @@ std::string replaceAll(std::string str, const std::string& from, const std::stri
 }
 
 int main(){
-    // string fen = "3r4/5pbk/P2P1n1p/q5p1/2Q2p2/5N1P/5PP1/4RBK1 w - - 1 31";
-    // string fen = "8/4k3/3P4/5N2/4R2B/8/8/4K3 b - - 1 31";
-    // string fen = "8/4k3/8/8/4R3/8/8/4K3 b - - 1 31";
-    // string fen = "4k3/3qr3/8/8/Q7/4Q3/8/2K5 b - - 1 31";
-    // string fen = "4k3/8/6n1/4R3/8/8/8/2K5 b - d3 1 31";
-    // string fen = "8/8/8/8/k2Pp2Q/8/8/3K4 b - d3 1 31";
-    // string fen = "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ - 3 9";
-    // string fen = "7k/8/8/8/8/6qq/8/R3K2R w KQ - 0 3";
-    string fen = "1k6/8/8/8/8/6qq/8/4K2R w - - 0 1";
-    // string fen = "4k3/8/4r3/8/4Q3/8/8/K7 b KQkq - 3 2";
-    // fen = replaceAll(fen, "P", "1");
-    // fen = replaceAll(fen, "R", "1");
-    // fen = replaceAll(fen, "N", "1");
-    // fen = replaceAll(fen, "B", "1");
-    // fen = replaceAll(fen, "Q", "1");
-    // fen = replaceAll(fen, "K", "1");
-    // cout << fen << endl;
-
-    Chess chess(fen);
-    // Chess chess("rnbqkbnr/pp2pppp/3p4/8/3NP3/8/PPP2PPP/RNBQKB1R w KQkq - 0 4");
-    // Chess chess("r7/p1kp4/2p2Pp1/1p6/4n3/1P2R1P1/P3b1P1/2KRN3 b - - 4 23");
-    // Chess chess("8/8/8/3Q4/8/8/8/8 w KQkq - 0 4");
-    // Chess chess;
+    Chess chess("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
     chess.printBoard();
 
-    chess.printGeneratedMoves();
+    string uci;
+    cout << "Turn: " << chess.getPlayerTurn() << endl;
+    cout << "Move: ";
+    cin >> uci;
+
+    while(uci != "m"){
+        chess.move(uci);
+        cout << chess.getFen() << endl;
+
+        cout << "Turn: " << chess.getPlayerTurn() << endl;
+        cout << "Move: ";
+        cin >> uci;
+    }
 
     return 0;
 }

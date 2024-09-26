@@ -10,13 +10,12 @@ void Chess::printBoard(){
     board.printBoard();
 }
 
-void Chess::move(string lan){
-    Move move(lan, board);
+void Chess::move(string uci){
+    Move move(uci, board);
 
     if(move.isMoveValid()){
         move.makeMove(board);
         board.printBoard();
-        board.moveUpdate(move.getFromSquare(), move.getToSquare());
     } else {
         cout << "Invalid move" << endl;
     }

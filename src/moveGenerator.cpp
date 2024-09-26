@@ -54,11 +54,6 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
     if(!pinners)
         pinnedPieces = 0ULL;
 
-    cout << "Pinned pieces:" << endl;
-    board.printBitBoard(pinnedPieces);
-    cout << "Pinners:" << endl;
-    board.printBitBoard(pinners);
-
     // Generate pseudo legal moves
     generateMoves();
 
@@ -641,14 +636,12 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
                 // Queen side
                 castleMask = (myKing >> 1 | myKing >> 2 | myKing >> 3);
                 if((castleMask & emptySquares & ~attackedSquares) == castleMask){
-                    cout << "White can castle queen side" << endl;
                     moves.push_back(Move("e1c1", board));
                     generatedMoves |= myKing >> 2;
                 }
                 // King side
                 castleMask = (myKing << 1 | myKing << 2);
                 if((castleMask & emptySquares & ~attackedSquares) == castleMask){
-                    cout << "White can castle king side" << endl;
                     moves.push_back(Move("e1g1", board));
                     generatedMoves |= myKing << 2;
                 }
@@ -656,13 +649,11 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             else if(board.getCastlingRights() & 0b1100 && !board.isWhiteToPlay()){
                 // Queen side
                 if((myKing >> 1 | myKing >> 2 | myKing >> 3) & emptySquares & ~attackedSquares){
-                    cout << "Black can castle queen side" << endl;
                     moves.push_back(Move("e8c8", board));
                     generatedMoves |= myKing >> 2;
                 }
                 // King side
                 if((myKing << 1 | myKing << 2) & emptySquares & ~attackedSquares){
-                    cout << "Black can castle king side" << endl;
                     moves.push_back(Move("e8g8", board));
                     generatedMoves |= myKing << 2;
                 }
@@ -1174,52 +1165,32 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
 
 uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
     // Remove all my pieces besides king
-    uint64_t pieceRays = 0ULL;
     uint64_t kingNoPieces = getQueenAttacks(piece, false, myPieces & ~myKing); // Get rays to attackers
-    cout << "King rays [no pieces]:" << endl;
-    board.printBitBoard(kingNoPieces);
 
     // Get rays to my king
     uint64_t oppsNoPieces = 0ULL;
 
     bool rookAttacksKing = false;
-    bool bishopAttacksKing = false;
-    bool queenAttacksKing = false;
-
     uint64_t rooksNoPieces = getRookAttacks(enemyRooks & ~checkers, false, myPieces & ~myKing);
     if(rooksNoPieces & myKing){
         oppsNoPieces |= rooksNoPieces;
         rookAttacksKing = true;
     }
+    bool bishopAttacksKing = false;
     uint64_t bishopsNoPieces =  getBishopAttacks(enemyBishops & ~checkers, false, myPieces & ~myKing);
     if(bishopsNoPieces & myKing){
         oppsNoPieces |= bishopsNoPieces;
         bishopAttacksKing = true;
     }
+    bool queenAttacksKing = false;
     uint64_t queensNoPieces = getQueenAttacks(enemyQueens & ~checkers, false, myPieces & ~myKing);
     if(queensNoPieces & myKing){
         oppsNoPieces |= queensNoPieces;
         queenAttacksKing = true;
     }
 
-    cout << "Rooks [no pieces]:" << endl;
-    board.printBitBoard(rooksNoPieces);
-    cout << "Bishops [no pieces]:" << endl;
-    board.printBitBoard(bishopsNoPieces);
-    cout << "Queens [no pieces]:" << endl;
-    board.printBitBoard(queensNoPieces);
-
-    cout << "Opp rays [no pieces]:" << endl;
-    board.printBitBoard(oppsNoPieces);
-
-    cout << "No pieces intersection:" << endl;
-    board.printBitBoard(kingNoPieces & oppsNoPieces);
-
     // Put my pieces back
-    pieceRays = 0ULL;
     uint64_t kingWPieces = getQueenAttacks(piece, false); // Intersection with 'pinned' piece from king
-    cout << "King rays [pieces]:" << endl;
-    board.printBitBoard(kingWPieces);
 
     uint64_t oppWPieces = 0ULL;
     // Intersection with 'pinned' piece from attackers
@@ -1229,12 +1200,6 @@ uint64_t MoveGenerator::getPinnedPieces(uint64_t piece){
         oppWPieces |= getBishopAttacks(enemyBishops & ~checkers, false);
     if(queenAttacksKing)
         oppWPieces |= getQueenAttacks(enemyQueens & ~checkers, false);
-
-    cout << "Opp rays [pieces]:" << endl;
-    board.printBitBoard(oppWPieces);
-
-    cout << "Intersection:" << endl;
-    board.printBitBoard(kingNoPieces & kingWPieces & oppsNoPieces & oppWPieces);
 
     return kingNoPieces & kingWPieces & oppsNoPieces & oppWPieces; // Actually return the pinned pieces
 }

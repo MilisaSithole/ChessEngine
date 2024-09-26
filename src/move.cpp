@@ -1,8 +1,8 @@
 #include "include/move.h"
 
-Move::Move(string lan, Board &board){
-    string moveFromStr = lan.substr(0, 2);
-    string moveToStr = lan.substr(2, 2);
+Move::Move(string uci, Board &board){
+    string moveFromStr = uci.substr(0, 2);
+    string moveToStr = uci.substr(2, 2);
     this->moveFrom = algebraicToIndex(moveFromStr);
     this->moveTo = algebraicToIndex(moveToStr);
     this->movedPiece = board.getPieceAt(moveFrom);
@@ -27,6 +27,7 @@ string Move::indexToAlgebraic(int &idx){
 }
 
 bool Move::isMoveValid(){
+    // TODO: Check if valid against generated moves
     if(!movedPiece.isEmpty() && movedPiece.isWhite() == isWhitesTurn && 
        (capturedPiece.isEmpty() || capturedPiece.getColour() != movedPiece.getColour()))
         return true;

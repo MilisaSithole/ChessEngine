@@ -10,17 +10,9 @@
 
 using namespace std;
 
-struct Square{
-    uint8_t rank;
-    uint8_t file;
-
-    Square() : rank(0), file(0) {}
-    Square(uint8_t rank, uint8_t file) : rank(rank), file(file) {}
-};
-
 class Move{
 public:
-    Move(string lan, Board &board);
+    Move(string uci, Board &board);
     Move(int moveFrom, int moveTo, Board &board);
     int algebraicToIndex(string &square);
     string indexToAlgebraic(int &idx);
