@@ -9,10 +9,12 @@
 #include "piece.h"
 
 using namespace std;
+class Move;
 
 class MoveGenerator{
 public:
     MoveGenerator(Board &board);
+    vector<Move> getMoves(){return moves;};
     void generateMoves();
 
 private:

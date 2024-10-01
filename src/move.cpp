@@ -26,11 +26,14 @@ string Move::indexToAlgebraic(int &idx){
     return string(1, 'a' + idx % 8) + to_string(8 - idx / 8);
 }
 
-bool Move::isMoveValid(){
-    // TODO: Check if valid against generated moves
-    if(!movedPiece.isEmpty() && movedPiece.isWhite() == isWhitesTurn && 
-       (capturedPiece.isEmpty() || capturedPiece.getColour() != movedPiece.getColour()))
-        return true;
+bool Move::isMoveValid(Board &board){
+    MoveGenerator moveGenerator(board);
+    // vector<Move> moves = moveGenerator.getMoves();
+
+    for(Move move : moveGenerator.getMoves()){
+        if(getUci() == move.getUci())
+            return true;
+    }
     return false;
 }
 

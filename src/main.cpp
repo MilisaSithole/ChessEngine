@@ -28,6 +28,7 @@ int main(){
     while(uci != "m"){
         chess.move(uci);
         cout << chess.getFen() << endl;
+        chess.printBoard();
 
         cout << "Turn: " << chess.getPlayerTurn() << endl;
         cout << "Move: ";

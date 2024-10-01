@@ -54,11 +54,8 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
     if(!pinners)
         pinnedPieces = 0ULL;
 
-    // Generate pseudo legal moves
+    // Generate legal moves
     generateMoves();
-
-    cout << "Generated moves:" << endl;
-    board.printBitBoard(generatedMoves);
 }
 
 void MoveGenerator::generateMoves(){
@@ -75,10 +72,6 @@ void MoveGenerator::generateMoves(){
     sort(moves.begin(), moves.end(), [](Move &a, Move &b) {
         return a.getUci() < b.getUci();
     });
-    cout << "Number of pseudo legal moves generated: " << moves.size() << endl;
-    for(auto move : moves){
-        move.printMove();
-    }
 }
 
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){

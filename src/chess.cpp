@@ -13,14 +13,12 @@ void Chess::printBoard(){
 void Chess::move(string uci){
     Move move(uci, board);
 
-    if(move.isMoveValid()){
+    if(move.isMoveValid(board)){
         move.makeMove(board);
         board.printBoard();
     } else {
         cout << "Invalid move" << endl;
     }
-
-    cout << getPlayerTurn() << "'s turn" << endl;
 }
 
 string Chess::getFen(){

@@ -155,7 +155,6 @@ bool Board::isWhiteToPlay(){
 }
 
 void Board::moveUpdate(int fromSquare, int toSquare){
-    // TODO: add en passant captures
     if(board[fromSquare].getType() == PieceType::Pawn && toSquare == enPassantIdx){
         int direction = (isWhitesTurn) ? 8 : -8;
         

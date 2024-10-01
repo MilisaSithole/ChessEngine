@@ -4,9 +4,11 @@
 #include <iostream>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "piece.h"
 #include "board.h"
+#include "moveGenerator.h"
 
 using namespace std;
 
@@ -16,7 +18,7 @@ public:
     Move(int moveFrom, int moveTo, Board &board);
     int algebraicToIndex(string &square);
     string indexToAlgebraic(int &idx);
-    bool isMoveValid();
+    bool isMoveValid(Board &board);
     void makeMove(Board &board);
     void printMove();
     int getFromSquare();
