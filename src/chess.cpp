@@ -4,6 +4,9 @@ Chess::Chess(const string &fen){
     cout << "Initial fen: " << fen << endl;
     // Initialize board
     board = Board(fen);
+
+    // Load move maps
+    loadMoveMaps();
 }
 
 void Chess::printBoard(){
@@ -31,4 +34,26 @@ string Chess::getPlayerTurn(){
 
 void Chess::printGeneratedMoves(){
     MoveGenerator moves(board);
+}
+
+void Chess::loadMoveMaps(){
+    ifstream movesFile("moves.csv");
+
+    if(!movesFile.is_open()){
+        cout << "Error opening moves file" << endl;
+        return;
+    }
+
+    string line;
+
+    int idx;
+    string move;
+    while(getline(movesFile, line)){
+        size_t commaPos = line.find(',');
+        idx = stoi(line.substr(0, commaPos));
+        move = line.substr(commaPos + 2);
+        
+        idxToMove[idx] = move;
+        moveToIdx[move] = idx;
+    }
 }

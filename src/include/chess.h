@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <sstream>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <unordered_map>
 
 #include "board.h"
 #include "move.h"
@@ -19,9 +23,12 @@ public:
     string getPlayerTurn();
 
     void printGeneratedMoves();
+    void loadMoveMaps();
 
 private:
     Board board;
+    unordered_map<int, string> idxToMove;
+    unordered_map<string, int> moveToIdx;
 };
 
 #endif

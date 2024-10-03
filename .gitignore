@@ -8,5 +8,8 @@ build
 ChessEngine
 CMake*
 *.py
+*.ipynb
 test
 test.cpp
+
+mcts*
