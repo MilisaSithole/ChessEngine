@@ -11,6 +11,7 @@
 #include "board.h"
 #include "move.h"
 #include "moveGenerator.h"
+#include "resNet.h"
 
 using namespace std;
 
@@ -29,6 +30,7 @@ private:
     Board board;
     unordered_map<int, string> idxToMove;
     unordered_map<string, int> moveToIdx;
+    ResNet resNet;
 };
 
 #endif

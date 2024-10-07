@@ -11,5 +11,3 @@ CMake*
 *.ipynb
 test
 test.cpp
-
-mcts*

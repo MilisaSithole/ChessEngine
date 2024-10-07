@@ -7,6 +7,9 @@ Chess::Chess(const string &fen){
 
     // Load move maps
     loadMoveMaps();
+
+    // Load ResNet
+    // resNet = ResNet("ResNet.pt");
 }
 
 void Chess::printBoard(){
@@ -37,7 +40,7 @@ void Chess::printGeneratedMoves(){
 }
 
 void Chess::loadMoveMaps(){
-    ifstream movesFile("moves.csv");
+    ifstream movesFile("../src/files/moves.csv");
 
     if(!movesFile.is_open()){
         cout << "Error opening moves file" << endl;
