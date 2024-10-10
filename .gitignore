@@ -5,7 +5,6 @@ CmakeFiles
 build
 
 *.yaml
-*.py
 *.ipynb
 test
 test.cpp
