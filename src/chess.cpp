@@ -1,15 +1,11 @@
 #include "include/chess.h"
 
 Chess::Chess(const string &fen){
-    cout << "Initial fen: " << fen << endl;
     // Initialize board
     board = Board(fen);
 
     // Load move maps
     loadMoveMaps();
-
-    // Load ResNet
-    // resNet = ResNet("ResNet.pt");
 }
 
 void Chess::printBoard(){
@@ -19,12 +15,10 @@ void Chess::printBoard(){
 void Chess::move(string uci){
     Move move(uci, board);
 
-    if(move.isMoveValid(board)){
+    if(move.isMoveValid(board))
         move.makeMove(board);
-        board.printBoard();
-    } else {
-        cout << "Invalid move" << endl;
-    }
+    else
+        cout << "Invalid move: " << endl;
 }
 
 string Chess::getFen(){
@@ -37,6 +31,11 @@ string Chess::getPlayerTurn(){
 
 void Chess::printGeneratedMoves(){
     MoveGenerator moves(board);
+    if(moves.getMoves().size() == 0){
+        cout << "Checkmate" << endl;
+        return;
+    }
+    moves.printGeneratedMoves();
 }
 
 void Chess::loadMoveMaps(){
@@ -45,6 +44,9 @@ void Chess::loadMoveMaps(){
     if(!movesFile.is_open()){
         cout << "Error opening moves file" << endl;
         return;
+    }
+    else{
+        cout << "Moves file loaded" << endl;
     }
 
     string line;
