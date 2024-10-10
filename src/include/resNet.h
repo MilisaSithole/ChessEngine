@@ -15,7 +15,8 @@ public:
 
 private:
     torch::jit::script::Module model;
-    string modelPath = "../src/files/ResNet.pt";
+    string modelPath = "../src/files/NewResNet.pt";
+    // string modelPath = "../src/files/ResNet.pt";
 };
 
 #endif
