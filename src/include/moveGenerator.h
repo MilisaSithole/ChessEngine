@@ -16,6 +16,7 @@ public:
     MoveGenerator(Board &board);
     vector<Move> getMoves(){return moves;};
     void generateMoves();
+    void printGeneratedMoves();
 
 private:
     Board &board;

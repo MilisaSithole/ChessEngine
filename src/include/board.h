@@ -26,7 +26,8 @@ public:
     void parseFen(string fen);
     string getFen();
     Piece getPieceAt(int square);
-    void makeMove(int fromSquare, int toSquare);
+    void makeMove(int fromSquare, int toSquare, string promotion = "");
+    void updateBoard(int fromSquare, int toSquare, string promotion = "");
     int algebraicToIndex(string &square);
     string idxToAlgebraic(int &idx);
     bool isWhiteToPlay();
@@ -38,7 +39,7 @@ public:
     uint8_t getBlackCastlingRights(){return castlingRights & 0b1100;};
 
     void setBitBoards();
-    void updateBitBoards(int idxFrom, int idxTo);
+    void updateBitBoards(int idxFrom, int idxTo, string promotion = "");
     void printBitBoard(uint64_t bitboard);
 
     uint64_t getWhiteBB();

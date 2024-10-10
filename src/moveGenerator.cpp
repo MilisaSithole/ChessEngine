@@ -60,6 +60,7 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
 
 void MoveGenerator::generateMoves(){
     generateKingMoves(myKing, enemyPieces, allPieces);
+
     if(numCheckers < 2){
         generatePawnMoves(myPawns, enemyPieces, emptySquares);
         generateRookMoves(myRooks, enemyPieces, allPieces);
@@ -74,8 +75,15 @@ void MoveGenerator::generateMoves(){
     });
 }
 
+void MoveGenerator::printGeneratedMoves(){
+    for(Move move: moves){
+        move.printMove();
+    }
+}
+
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){
     uint64_t startingRank = (board.isWhiteToPlay()) ? 0x00FF000000000000 : 0x000000000000FF00;
+    uint64_t finalRank = (board.isWhiteToPlay()) ? 0x00000000000000FF : 0xFF00000000000000;
     uint64_t leftMask = (board.isWhiteToPlay()) ? 0x0101010101010101 : 0x8080808080808080; // Relative
     uint64_t rightMask = (board.isWhiteToPlay()) ? 0x8080808080808080 : 0x0101010101010101;
     int direction = (board.isWhiteToPlay()) ? 8 : -8;
@@ -94,8 +102,16 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Add the single push to the pseudo legal moves
     int toSquare = 0;
     while(singlePush){
-        if(singlePush & 1)
-            moves.push_back(Move(toSquare + direction, toSquare, board));
+        if(singlePush & 1){
+            if((1ULL << toSquare) & finalRank){
+                moves.push_back(Move(toSquare + direction, toSquare, board, "R"));
+                moves.push_back(Move(toSquare + direction, toSquare, board, "N"));
+                moves.push_back(Move(toSquare + direction, toSquare, board, "B"));
+                moves.push_back(Move(toSquare + direction, toSquare, board, "Q"));
+            }
+            else
+                moves.push_back(Move(toSquare + direction, toSquare, board));
+        }
         
         singlePush >>= 1;
         toSquare++;
@@ -1034,6 +1050,7 @@ uint64_t MoveGenerator::getAttackerRay(uint64_t piece, uint64_t attackType){
 }
 
 uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, uint64_t attackType){
+
     uint64_t attacker = attackers;
     if(attackType == checkers)
         attacker &= checkers;
@@ -1056,7 +1073,7 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
             pieceCopy >>= 1;
         }
 
-        // Check if in same file or rank
+        // Check if not in same file or rank
         if((attackerSquare % 8 != pieceSquare % 8) && (attackerSquare / 8 != pieceSquare / 8))
             return ray;
 
@@ -1070,7 +1087,7 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
             }
         }
         // Check down
-        else if(piece >= (attacker << 8)){
+        else if(piece >= (attacker << 8) && (attacker << 8) != 0ULL){
             while((ray & (piece >> 8)) == 0){
                 ray |= attacker << (8 * distance);
                 distance++;
@@ -1084,7 +1101,7 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
             }
         }
         // Check right
-        else if(piece >= (attacker << 1)){
+        else if(piece >= (attacker << 1) && (attacker << 1) != 0ULL){
             while((ray & (attacker << 1)) == 0){
                 ray |= piece >> distance;
                 distance++;
@@ -1258,6 +1275,7 @@ void MoveGenerator::updateNumCheckers(){
 }
 
 void MoveGenerator::updateCheckMasks(){
+
     if(numCheckers == 0){
         captureMask = 0xFFFFFFFFFFFFFFFF;
         blockMask = 0xFFFFFFFFFFFFFFFF;

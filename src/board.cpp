@@ -134,12 +134,23 @@ Piece Board::getPieceAt(int square){
     return board[square];
 }
 
-void Board::makeMove(int fromSquare, int toSquare){    
+void Board::makeMove(int fromSquare, int toSquare, string promotion){    
     moveUpdate(fromSquare, toSquare);
 
-    board[toSquare] = board[fromSquare];
-    board[fromSquare] = Piece();
-    updateBitBoards(fromSquare, toSquare);
+    // Move moving piece
+    updateBitBoards(fromSquare, toSquare, promotion);
+
+    updateBoard(fromSquare, toSquare, promotion);
+}
+
+void Board::updateBoard(int fromSquare, int toSquare, string promotion){
+    // Promotion
+    if(promotion != "")
+        return;
+    else {
+        board[toSquare] = board[fromSquare];
+        board[fromSquare] = Piece();
+    }
 }
 
 int Board::algebraicToIndex(string &square){
@@ -154,13 +165,18 @@ bool Board::isWhiteToPlay(){
     return isWhitesTurn;
 }
 
+/// <summary>
+/// Updates the game state and bitboards for a move.
+/// </summary>
+/// <param name="fromSquare">The square the piece is moving from.</param>
+/// <param name="toSquare">The square the piece is moving to.</param>
 void Board::moveUpdate(int fromSquare, int toSquare){
+    // En passant capture
     if(board[fromSquare].getType() == PieceType::Pawn && toSquare == enPassantIdx){
         int direction = (isWhitesTurn) ? 8 : -8;
         
         board[toSquare + direction] = Piece();
         updateBitBoards(toSquare + direction, -1);
-
     }
 
     // Castling rights
@@ -195,14 +211,22 @@ void Board::moveUpdate(int fromSquare, int toSquare){
         }
     }
 
+    // Check if rooks moved or captured to update castling rights
+    if((fromSquare == 0 || fromSquare == 7) && board[fromSquare].getType() == PieceType::Rook && !board[fromSquare].isWhite())
+        castlingRights &= 0b0011;
+    if((toSquare == 0 || toSquare == 7) && board[toSquare].getType() == PieceType::Rook && !board[toSquare].isWhite())
+        castlingRights &= 0b0011;
+    if((fromSquare == 56 || fromSquare == 63) && board[fromSquare].getType() == PieceType::Rook && board[fromSquare].isWhite())
+        castlingRights &= 0b1100;
+    if((toSquare == 56 || toSquare == 63) && board[toSquare].getType() == PieceType::Rook && board[toSquare].isWhite())
+        castlingRights &= 0b1100;
+
     // En passant
     prevEnPassantIdx = enPassantIdx;
     enPassantIdx = -1;
-    if(board[fromSquare].getType() == PieceType::Pawn){
-        cout << "En passant update: " << (fromSquare / 8) << " " << (toSquare / 8) << endl;
+    if(board[fromSquare].getType() == PieceType::Pawn)
         if(abs((fromSquare / 8) - (toSquare / 8)) == 2)
             enPassantIdx = (fromSquare + toSquare) / 2;
-    }
         
 
     // Half move clock
@@ -265,18 +289,109 @@ void Board::setBitBoards(){
     }
 }
 
-void Board::updateBitBoards(int fromSquare, int toSquare){
+void Board::updateBitBoards(int fromSquare, int toSquare, string promotion){
+    // For en passant capture
     if(toSquare == -1){
         if(board[fromSquare].isWhite())
             whitePawnsBB &= ~(1ULL << fromSquare);
+        else
+            blackPawnsBB &= ~(1ULL << fromSquare);
 
         return;
     }
 
+
     Piece movingPiece = board[fromSquare];
     Piece capturedPiece = board[toSquare];
+    cout << "Moving piece: " << movingPiece.symbol() << endl;
+    cout << "Moving piece colour: " << (movingPiece.isWhite() ? "White" : "Black") << endl;
+    cout << "Captured piece: " << capturedPiece.symbol() << endl;
+    cout << "Captured piece colour: " << (capturedPiece.isWhite() ? "White" : "Black") << endl;
+
+    // Remove captured piece
+    if(!capturedPiece.isEmpty()){
+        cout << "Removing the captured piece" << endl;
+        if(capturedPiece.getType() == PieceType::Pawn){
+            if(capturedPiece.isWhite())
+                whitePawnsBB &= ~(1ULL << toSquare);
+            else
+                blackPawnsBB &= ~(1ULL << toSquare);
+        }
+        else if(capturedPiece.getType() == PieceType::Rook){
+            if(capturedPiece.isWhite())
+                whiteRooksBB &= ~(1ULL << toSquare);
+            else
+                blackRooksBB &= ~(1ULL << toSquare);
+        }
+        else if(capturedPiece.getType() == PieceType::Knight){
+            if(capturedPiece.isWhite()){
+                whiteKnightsBB &= ~(1ULL << toSquare);
+            }
+            else{
+                blackKnightsBB &= ~(1ULL << toSquare);
+            }
+        }
+        else if(capturedPiece.getType() == PieceType::Bishop){
+            if(capturedPiece.isWhite()){
+                whiteBishopsBB &= ~(1ULL << toSquare);
+            }
+            else{
+                blackBishopsBB &= ~(1ULL << toSquare);
+            }
+        }
+        else if(capturedPiece.getType() == PieceType::Queen){
+            if(capturedPiece.isWhite()){
+                whiteQueensBB &= ~(1ULL << toSquare);
+            }
+            else{
+                blackQueensBB &= ~(1ULL << toSquare);
+            }
+        }
+        else if(capturedPiece.getType() == PieceType::King){
+            if(capturedPiece.isWhite()){
+                whiteKingBB &= ~(1ULL << toSquare);
+            }
+            else{
+                blackKingBB &= ~(1ULL << toSquare);
+            }
+        }
+    }
 
     // Move moving piece
+    if(promotion != ""){
+        if(movingPiece.isWhite())
+            whitePawnsBB &= ~(1ULL << fromSquare);
+        else
+            blackPawnsBB &= ~(1ULL << fromSquare);
+            
+        switch(promotion[0]){
+            case 'Q':
+                if(movingPiece.isWhite()){
+                    board[toSquare] = Piece('Q');
+                    whiteQueensBB |= (1ULL << toSquare);
+                }
+                else{
+                    board[toSquare] = Piece('q');
+                    blackQueensBB |= (1ULL << toSquare);
+                }
+                break;
+            case 'N':
+                if(movingPiece.isWhite()){
+                    board[toSquare] = Piece('N');
+                    whiteKnightsBB |= (1ULL << toSquare);
+                }
+                else{
+                    board[toSquare] = Piece('n');
+                    blackKnightsBB |= (1ULL << toSquare);
+                }
+                break;
+        }
+        board[fromSquare] = Piece();
+        cout << "After promotion:" << endl;
+        printBoard();
+        return;
+    }
+
     if(movingPiece.getType() == PieceType::Pawn){
         if(movingPiece.isWhite()){
             whitePawnsBB &= ~(1ULL << fromSquare);
@@ -335,54 +450,6 @@ void Board::updateBitBoards(int fromSquare, int toSquare){
         else{
             blackKingBB &= ~(1ULL << fromSquare);
             blackKingBB |= (1ULL << toSquare);
-        }
-    }
-
-    // Remove captured piece
-    if(!capturedPiece.isEmpty()){
-        if(capturedPiece.getType() == PieceType::Pawn){
-            if(capturedPiece.isWhite())
-                whitePawnsBB &= ~(1ULL << toSquare);
-            else
-                blackPawnsBB &= ~(1ULL << toSquare);
-        }
-        else if(capturedPiece.getType() == PieceType::Rook){
-            if(capturedPiece.isWhite())
-                whiteRooksBB &= ~(1ULL << toSquare);
-            else
-                blackRooksBB &= ~(1ULL << toSquare);
-        }
-        else if(capturedPiece.getType() == PieceType::Knight){
-            if(capturedPiece.isWhite()){
-                whiteKnightsBB &= ~(1ULL << toSquare);
-            }
-            else{
-                blackKnightsBB &= ~(1ULL << toSquare);
-            }
-        }
-        else if(capturedPiece.getType() == PieceType::Bishop){
-            if(capturedPiece.isWhite()){
-                whiteBishopsBB &= ~(1ULL << toSquare);
-            }
-            else{
-                blackBishopsBB &= ~(1ULL << toSquare);
-            }
-        }
-        else if(capturedPiece.getType() == PieceType::Queen){
-            if(capturedPiece.isWhite()){
-                whiteQueensBB &= ~(1ULL << toSquare);
-            }
-            else{
-                blackQueensBB &= ~(1ULL << toSquare);
-            }
-        }
-        else if(capturedPiece.getType() == PieceType::King){
-            if(capturedPiece.isWhite()){
-                whiteKingBB &= ~(1ULL << toSquare);
-            }
-            else{
-                blackKingBB &= ~(1ULL << toSquare);
-            }
         }
     }
 }

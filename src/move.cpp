@@ -3,6 +3,8 @@
 Move::Move(string uci, Board &board){
     string moveFromStr = uci.substr(0, 2);
     string moveToStr = uci.substr(2, 2);
+    if(uci.length() > 4)
+        this->promotion = uci.substr(4, 1);
     this->moveFrom = algebraicToIndex(moveFromStr);
     this->moveTo = algebraicToIndex(moveToStr);
     this->movedPiece = board.getPieceAt(moveFrom);
@@ -10,12 +12,13 @@ Move::Move(string uci, Board &board){
     this->isWhitesTurn = board.isWhiteToPlay();
 }
 
-Move::Move(int moveFrom, int moveTo, Board &board){
+Move::Move(int moveFrom, int moveTo, Board &board, string promotion){
     this->moveFrom = moveFrom;
     this->moveTo = moveTo;
     this->movedPiece = board.getPieceAt(moveFrom);
     this->capturedPiece = board.getPieceAt(moveTo);
     this->isWhitesTurn = board.isWhiteToPlay();
+    this->promotion = promotion;
 }
 
 int Move::algebraicToIndex(string &square){
@@ -38,11 +41,11 @@ bool Move::isMoveValid(Board &board){
 }
 
 void Move::makeMove(Board &board){
-    board.makeMove(moveFrom, moveTo);
+    board.makeMove(moveFrom, moveTo, promotion);
 }
 
 void Move::printMove(){
-    std::cout << indexToAlgebraic(moveFrom) << " -> " << indexToAlgebraic(moveTo) << std::endl;
+    cout << indexToAlgebraic(moveFrom) << " -> " << indexToAlgebraic(moveTo) << promotion << endl;
 }
 
 int Move::getFromSquare(){
@@ -62,5 +65,5 @@ bool Move::isPawnMovedOrCaptured(){
 }
 
 string Move::getUci(){
-    return indexToAlgebraic(moveFrom) + indexToAlgebraic(moveTo);
+    return indexToAlgebraic(moveFrom) + indexToAlgebraic(moveTo) + promotion;
 }
