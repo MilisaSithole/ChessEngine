@@ -303,14 +303,9 @@ void Board::updateBitBoards(int fromSquare, int toSquare, string promotion){
 
     Piece movingPiece = board[fromSquare];
     Piece capturedPiece = board[toSquare];
-    cout << "Moving piece: " << movingPiece.symbol() << endl;
-    cout << "Moving piece colour: " << (movingPiece.isWhite() ? "White" : "Black") << endl;
-    cout << "Captured piece: " << capturedPiece.symbol() << endl;
-    cout << "Captured piece colour: " << (capturedPiece.isWhite() ? "White" : "Black") << endl;
 
     // Remove captured piece
     if(!capturedPiece.isEmpty()){
-        cout << "Removing the captured piece" << endl;
         if(capturedPiece.getType() == PieceType::Pawn){
             if(capturedPiece.isWhite())
                 whitePawnsBB &= ~(1ULL << toSquare);
@@ -387,8 +382,6 @@ void Board::updateBitBoards(int fromSquare, int toSquare, string promotion){
                 break;
         }
         board[fromSquare] = Piece();
-        cout << "After promotion:" << endl;
-        printBoard();
         return;
     }
 

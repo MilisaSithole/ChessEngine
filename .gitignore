@@ -5,8 +5,6 @@ CmakeFiles
 build
 
 *.yaml
-ChessEngine
-CMake*
 *.py
 *.ipynb
 test
