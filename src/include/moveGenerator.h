@@ -14,13 +14,13 @@ class Move;
 class MoveGenerator{
 public:
     MoveGenerator(Board &board);
-    vector<Move> getMoves(){return moves;};
+    vector<string> getMoves(){return moves;};
     void generateMoves();
     void printGeneratedMoves();
 
 private:
     Board &board;
-    vector<Move> moves;
+    vector<string> moves;
 
     uint64_t myPawns, myRooks, myKnights, myBishops, myQueens, myKing;
     uint64_t enemyPawns, enemyRooks, enemyKnights, enemyBishops, enemyQueens, enemyKing;
