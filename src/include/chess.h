@@ -23,6 +23,8 @@ public:
     string getFen();
     string getPlayerTurn();
     Board getBoard(){return board;};
+    bool isGameOver();
+    string getResult(){return result;};
 
     void printGeneratedMoves();
 
@@ -31,6 +33,7 @@ private:
     vector<string> idxToMove;
     unordered_map<string, int> moveToIdx;
     ResNet resNet;
+    string result;
 };
 
 #endif
