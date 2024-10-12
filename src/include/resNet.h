@@ -12,11 +12,13 @@ using namespace std;
 class ResNet{
 public:
     ResNet();
+    torch::jit::IValue getOutput(torch::Tensor input);
+    torch::Tensor getPolicy(torch::Tensor input);
+    float getValue(torch::Tensor input);
 
 private:
     torch::jit::script::Module model;
     string modelPath = "../src/files/NewResNet.pt";
-    // string modelPath = "../src/files/ResNet.pt";
 };
 
 #endif
