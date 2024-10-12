@@ -3,9 +3,7 @@
 
 #include <torch/torch.h>
 #include <torch/script.h>
-
 #include <memory>
-#include <vector>
 
 using namespace std;
 
@@ -14,11 +12,10 @@ public:
     ResNet();
     torch::jit::IValue getOutput(torch::Tensor input);
     torch::Tensor getPolicy(torch::Tensor input);
-    float getValue(torch::Tensor input);
 
 private:
     torch::jit::script::Module model;
-    string modelPath = "../src/files/NewResNet.pt";
+    string modelPath = "../src/files/ResNet.pt";
 };
 
 #endif

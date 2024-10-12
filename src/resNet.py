@@ -97,7 +97,7 @@ class ChessDataset(Dataset):
     
 
 def boardToTensor(board: chess.Board):
-    tensor = np.zeros((18, 8, 8), dtype = np.float32)
+    tensor = np.zeros((19, 8, 8), dtype = np.float32)
 
     # Add pieces to the tensor [12]
     pieceMap = board.piece_map()
@@ -171,11 +171,11 @@ print(board)
 # model = ChessResNet([2, 2, 2, 2], 18, 1792)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device = torch.device('cpu')
-model = ResNet(4, 18, 64, 1968, device)
+model = ResNet(4, 19, 64, 1968, device)
 model.eval()
 
 # Test input
-inp = boardToTensor(board).reshape(-1, 18, 8, 8)
+inp = boardToTensor(board).reshape(-1, 19, 8, 8)
 inp = torch.tensor(inp, device = device)
 
 # Outputs
@@ -185,7 +185,7 @@ value = value.item()
 
 
 # Save model
-traceAndSave(model, inp, 'NewResNet')
+traceAndSave(model, inp, 'ResNet')
 
 print('\n======= O U T P U T S =======')
 print(f'Policy:\t\t {policy}')
