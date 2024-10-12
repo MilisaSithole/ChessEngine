@@ -121,13 +121,13 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     while(singlePush){
         if(singlePush & 1){
             if((1ULL << toSquare) & finalRank){
-                moves.push_back(Move(toSquare + direction, toSquare, board, "R").getUci());
-                moves.push_back(Move(toSquare + direction, toSquare, board, "N").getUci());
-                moves.push_back(Move(toSquare + direction, toSquare, board, "B").getUci());
-                moves.push_back(Move(toSquare + direction, toSquare, board, "Q").getUci());
+                moves.push_back(Move(toSquare + direction, toSquare, board, "R").getLan());
+                moves.push_back(Move(toSquare + direction, toSquare, board, "N").getLan());
+                moves.push_back(Move(toSquare + direction, toSquare, board, "B").getLan());
+                moves.push_back(Move(toSquare + direction, toSquare, board, "Q").getLan());
             }
             else
-                moves.push_back(Move(toSquare + direction, toSquare, board).getUci());
+                moves.push_back(Move(toSquare + direction, toSquare, board).getLan());
         }
         
         singlePush >>= 1;
@@ -148,7 +148,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     toSquare = 0;
     while(doublePush){
         if(doublePush & 1)
-            moves.push_back(Move(toSquare + (2 * direction), toSquare, board).getUci());
+            moves.push_back(Move(toSquare + (2 * direction), toSquare, board).getLan());
 
         doublePush >>= 1;
         toSquare++;
@@ -168,7 +168,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     toSquare = 0;
     while(leftCaptures){
         if(leftCaptures & 1)
-            moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board).getUci());
+            moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board).getLan());
         
         leftCaptures >>= 1;
         toSquare++;
@@ -188,7 +188,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     toSquare = 0;
     while(rightCaptures){
         if(rightCaptures & 1)
-            moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board).getUci());
+            moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board).getLan());
 
         rightCaptures >>= 1;
         toSquare++;
@@ -201,13 +201,13 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
             // Left capture
             if(((friendlyPawns & ~pinnedPieces) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 if(!checkForEnPassantDiscoveredCheck(1ULL << (enPassantSquare + 9), 1ULL << (enPassantSquare + 8))){
-                    moves.push_back(Move(enPassantSquare + 9, enPassantSquare, board).getUci());
+                    moves.push_back(Move(enPassantSquare + 9, enPassantSquare, board).getLan());
                     generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & (captureMask | blockMask);
                 }
             // Right capture
             if(((friendlyPawns & ~pinnedPieces) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 if(!checkForEnPassantDiscoveredCheck(1ULL << (enPassantSquare + 7), 1ULL << (enPassantSquare + 8))){
-                    moves.push_back(Move(enPassantSquare + 7, enPassantSquare, board).getUci());
+                    moves.push_back(Move(enPassantSquare + 7, enPassantSquare, board).getLan());
                     generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & (captureMask | blockMask);
                 }
         }
@@ -215,13 +215,13 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
             // Left capture
             if(((friendlyPawns & ~pinnedPieces) & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 if(!checkForEnPassantDiscoveredCheck(1ULL << (enPassantSquare - 9), 1ULL << (enPassantSquare - 8))){
-                    moves.push_back(Move(enPassantSquare - 9, enPassantSquare, board).getUci());
+                    moves.push_back(Move(enPassantSquare - 9, enPassantSquare, board).getLan());
                     generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~leftMask) << 9 & (1ULL << enPassantSquare) & (captureMask | blockMask);
                 }
             // Right capture
             if(((friendlyPawns & ~pinnedPieces) & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask))
                 if(!checkForEnPassantDiscoveredCheck(1ULL << (enPassantSquare - 7), 1ULL << (enPassantSquare - 8))){
-                    moves.push_back(Move(enPassantSquare - 7, enPassantSquare, board).getUci());
+                    moves.push_back(Move(enPassantSquare - 7, enPassantSquare, board).getLan());
                     generatedMoves |= ((friendlyPawns & ~pinnedPieces) & ~rightMask) << 7 & (1ULL << enPassantSquare) & (captureMask | blockMask);
                 }
         }
@@ -245,7 +245,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
 
                 generatedMoves |= singlePush & pinnedRay;
                 if(singlePush & pinnedRay)
-                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction, board).getUci());
+                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction, board).getLan());
 
                 // Double push
                 if(board.isWhiteToPlay())
@@ -255,7 +255,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
 
                 generatedMoves |= doublePush & pinnedRay;
                 if(doublePush & pinnedRay)
-                    moves.push_back(Move(pinnedIdx, pinnedIdx - (2 * direction), board).getUci());
+                    moves.push_back(Move(pinnedIdx, pinnedIdx - (2 * direction), board).getLan());
 
                 // Left capture
                 if(board.isWhiteToPlay())
@@ -265,7 +265,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
 
                 generatedMoves |= leftCaptures & pinnedRay;
                 if(leftCaptures & pinnedRay)
-                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction - (direction % 7), board).getUci());
+                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction - (direction % 7), board).getLan());
 
                 // Right capture
                 if(board.isWhiteToPlay())
@@ -275,7 +275,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
 
                 generatedMoves |= rightCaptures & pinnedRay;
                 if(rightCaptures & pinnedRay)
-                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction + (direction % 7), board).getUci());
+                    moves.push_back(Move(pinnedIdx, pinnedIdx - direction + (direction % 7), board).getLan());
 
                 // En passant capture
                 if(board.getEnPassantSquare() != -1){
@@ -283,10 +283,10 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
                     if(board.isWhiteToPlay()){
                         // Left capture
                         if(((1ULL << pinnedIdx) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & pinnedRay)
-                            moves.push_back(Move(enPassantSquare + 9, enPassantSquare, board).getUci());
+                            moves.push_back(Move(enPassantSquare + 9, enPassantSquare, board).getLan());
                         // Right capture
                         if(((1ULL << pinnedIdx) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & pinnedRay)
-                            moves.push_back(Move(enPassantSquare + 7, enPassantSquare, board).getUci());
+                            moves.push_back(Move(enPassantSquare + 7, enPassantSquare, board).getLan());
 
                         generatedMoves |= ((1ULL << pinnedIdx) & ~leftMask) >> 9 & (1ULL << enPassantSquare) & pinnedRay;
                         generatedMoves |= ((1ULL << pinnedIdx) & ~rightMask) >> 7 & (1ULL << enPassantSquare) & pinnedRay;
@@ -294,10 +294,10 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
                     else {
                         // Left capture
                         if(((1ULL << pinnedIdx) & ~leftMask) << 9 & (1ULL << enPassantSquare) & pinnedRay)
-                            moves.push_back(Move(enPassantSquare - 9, enPassantSquare, board).getUci());
+                            moves.push_back(Move(enPassantSquare - 9, enPassantSquare, board).getLan());
                         // Right capture
                         if(((1ULL << pinnedIdx) & ~rightMask) << 7 & (1ULL << enPassantSquare) & pinnedRay)
-                            moves.push_back(Move(enPassantSquare - 7, enPassantSquare, board).getUci());
+                            moves.push_back(Move(enPassantSquare - 7, enPassantSquare, board).getLan());
 
                         generatedMoves |= ((1ULL << pinnedIdx) & ~leftMask) << 9 & (1ULL << enPassantSquare) & pinnedRay;
                         generatedMoves |= ((1ULL << pinnedIdx) & ~rightMask) << 7 & (1ULL << enPassantSquare) & pinnedRay;
@@ -662,25 +662,25 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
                 // Queen side
                 castleMask = (myKing >> 1 | myKing >> 2 | myKing >> 3);
                 if((castleMask & emptySquares & ~attackedSquares) == castleMask){
-                    moves.push_back(Move("e1c1", board).getUci());
+                    moves.push_back(Move("e1c1", board).getLan());
                     generatedMoves |= myKing >> 2;
                 }
                 // King side
                 castleMask = (myKing << 1 | myKing << 2);
                 if((castleMask & emptySquares & ~attackedSquares) == castleMask){
-                    moves.push_back(Move("e1g1", board).getUci());
+                    moves.push_back(Move("e1g1", board).getLan());
                     generatedMoves |= myKing << 2;
                 }
             }
             else if(board.getCastlingRights() & 0b1100 && !board.isWhiteToPlay()){
                 // Queen side
                 if((myKing >> 1 | myKing >> 2 | myKing >> 3) & emptySquares & ~attackedSquares){
-                    moves.push_back(Move("e8c8", board).getUci());
+                    moves.push_back(Move("e8c8", board).getLan());
                     generatedMoves |= myKing >> 2;
                 }
                 // King side
                 if((myKing << 1 | myKing << 2) & emptySquares & ~attackedSquares){
-                    moves.push_back(Move("e8g8", board).getUci());
+                    moves.push_back(Move("e8g8", board).getLan());
                     generatedMoves |= myKing << 2;
                 }
             }
@@ -699,7 +699,7 @@ void MoveGenerator::addBBToMoves(int fromSquare, uint64_t movesBB){
     int toSquare = 0;
     while(movesBB){
         if(movesBB & 1)
-            moves.push_back(Move(fromSquare, toSquare, board).getUci());
+            moves.push_back(Move(fromSquare, toSquare, board).getLan());
         movesBB >>= 1;
         toSquare++;
     }

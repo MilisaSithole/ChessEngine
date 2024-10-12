@@ -14,7 +14,7 @@ using namespace std;
 
 class Move{
 public:
-    Move(string uci, Board &board);
+    Move(string lan, Board &board);
     Move(int moveFrom, int moveTo, Board &board, string promotion = "");
     int algebraicToIndex(string &square);
     string indexToAlgebraic(int &idx);
@@ -25,7 +25,7 @@ public:
     int getToSquare();
     Piece getMovedPiece();
     bool isPawnMovedOrCaptured();
-    string getUci();
+    string getLan();
 
 private:
     int moveFrom;

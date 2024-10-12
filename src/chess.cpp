@@ -8,8 +8,8 @@ void Chess::printBoard(){
     board.printBoard();
 }
 
-void Chess::move(string uci){
-    Move move(uci, board);
+void Chess::move(string lan){
+    Move move(lan, board);
 
     if(move.isMoveValid(board))
         move.makeMove(board);

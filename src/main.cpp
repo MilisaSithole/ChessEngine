@@ -32,30 +32,30 @@ int main(){
     Chess chess;
     chess.printBoard();
 
-    string uci;
+    string lan;
     bool playerTurn = chess.getPlayerTurn() == "White";
     cout << "Turn: " << playerTurn << endl;
     cout << "Move: ";
-    cin >> uci;
+    cin >> lan;
 
-    while(uci != "q"){
+    while(lan != "q"){
         if(playerTurn)
-            uci = agent.getMove(chess.getBoard());
+            lan = agent.getMove(chess.getBoard());
 
-        if(uci == "m"){
+        if(lan == "m"){
             chess.printGeneratedMoves();
             cout << "Move: ";
-            cin >> uci;
+            cin >> lan;
             continue;
         }
 
-        chess.move(uci);
+        chess.move(lan);
         cout << chess.getFen() << endl;
         chess.printBoard();
 
         cout << "Turn: " << chess.getPlayerTurn() << endl;
         cout << "Move: ";
-        cin >> uci;
+        cin >> lan;
     }
 
     return 0;

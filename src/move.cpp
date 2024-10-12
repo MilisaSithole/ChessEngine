@@ -1,10 +1,10 @@
 #include "include/move.h"
 
-Move::Move(string uci, Board &board){
-    string moveFromStr = uci.substr(0, 2);
-    string moveToStr = uci.substr(2, 2);
-    if(uci.length() > 4)
-        this->promotion = uci.substr(4, 1);
+Move::Move(string lan, Board &board){
+    string moveFromStr = lan.substr(0, 2);
+    string moveToStr = lan.substr(2, 2);
+    if(lan.length() > 4)
+        this->promotion = lan.substr(4, 1);
     this->moveFrom = algebraicToIndex(moveFromStr);
     this->moveTo = algebraicToIndex(moveToStr);
     this->movedPiece = board.getPieceAt(moveFrom);
@@ -34,7 +34,7 @@ bool Move::isMoveValid(Board &board){
     // vector<Move> moves = moveGenerator.getMoves();
 
     for(string move : moveGenerator.getMoves()){
-        if(getUci() == move)
+        if(getLan() == move)
             return true;
     }
     return false;
@@ -64,6 +64,6 @@ bool Move::isPawnMovedOrCaptured(){
     return (movedPiece.getType() == PieceType::Pawn) || (capturedPiece.getType() == PieceType::Pawn);
 }
 
-string Move::getUci(){
+string Move::getLan(){
     return indexToAlgebraic(moveFrom) + indexToAlgebraic(moveTo) + promotion;
 }

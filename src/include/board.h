@@ -27,7 +27,7 @@ public:
     string getFen();
     Piece getPieceAt(int square);
     void makeMove(int fromSquare, int toSquare, string promotion = "");
-    void makeMove(string uci);
+    void makeMove(string lan);
     void updateBoard(int fromSquare, int toSquare, string promotion = "");
     int algebraicToIndex(string &square);
     string idxToAlgebraic(int &idx);
