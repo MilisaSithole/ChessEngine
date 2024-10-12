@@ -10,10 +10,7 @@ string Agent::getMove(Board board){
     //     cout << move.first << " " << move.second << endl;
     // }
     
-    string bestMove = getBestMove(policy);
-    cout << "Best move: " << bestMove << endl;
-
-    return bestMove;
+    return getBestMove(policy);
 }
 
 string Agent::getBestMove(unordered_map<string, float> &policy){
