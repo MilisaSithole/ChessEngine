@@ -33,28 +33,3 @@ void Chess::printGeneratedMoves(){
     }
     moves.printGeneratedMoves();
 }
-
-void Chess::loadMoveMaps(){
-    ifstream movesFile("../src/files/moves.csv");
-
-    if(!movesFile.is_open()){
-        cout << "Error opening moves file" << endl;
-        return;
-    }
-    else{
-        cout << "Moves file loaded" << endl;
-    }
-
-    string line;
-
-    int idx;
-    string move;
-    while(getline(movesFile, line)){
-        size_t commaPos = line.find(',');
-        idx = stoi(line.substr(0, commaPos));
-        move = line.substr(commaPos + 2);
-        
-        idxToMove[idx] = move;
-        moveToIdx[move] = idx;
-    }
-}
