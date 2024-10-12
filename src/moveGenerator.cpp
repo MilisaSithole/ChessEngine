@@ -87,6 +87,12 @@ bool MoveGenerator::isTerminalState(){
     return true;
 }
 
+bool MoveGenerator::isLoss(){
+    if(isTerminalState() && numCheckers != 0)
+        return true;
+    return false;
+}
+
 float MoveGenerator::getValue(){
     if(isTerminalState()){
         if(numCheckers == 0)

@@ -18,6 +18,7 @@ public:
     void generateMoves();
     void printGeneratedMoves();
     bool isTerminalState();
+    bool isLoss();
     float getValue();
 
 private:
