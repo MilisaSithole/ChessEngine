@@ -28,7 +28,7 @@ public:
 
 private:
     Board board;
-    unordered_map<int, string> idxToMove;
+    vector<string> idxToMove;
     unordered_map<string, int> moveToIdx;
     ResNet resNet;
 };
