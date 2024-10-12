@@ -22,9 +22,9 @@ public:
     void move(string uci);
     string getFen();
     string getPlayerTurn();
+    Board getBoard(){return board;};
 
     void printGeneratedMoves();
-    void loadMoveMaps();
 
 private:
     Board board;
