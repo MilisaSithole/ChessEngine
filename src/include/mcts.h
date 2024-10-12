@@ -16,7 +16,7 @@
 #include "moveGenerator.h"
 
 using namespace std;
-MoveMap moveMap;
+extern MoveMap moveMap;
 
 class Node{
 public:
@@ -37,13 +37,13 @@ public:
     int visits;
     float value;
 
-    vector<unique_ptr<Node>> children;
+    vector<shared_ptr<Node>> children;
 };
 
 class MCTS{
 public:
     MCTS(unordered_map<string, float> &args, ResNet &model);
-    vector<float> search(string state);
+    unordered_map<string, float> search(string state);
 
 private:
     torch::Tensor getStateTensor(string state);
