@@ -87,7 +87,7 @@ bool MoveGenerator::isTerminalState(){
     return true;
 }
 
-float MoveGenerator::getTerminalValue(){
+float MoveGenerator::getValue(){
     if(isTerminalState()){
         if(numCheckers == 0)
             return 0.5;    
