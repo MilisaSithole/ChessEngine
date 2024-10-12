@@ -1,11 +1,7 @@
 #include "include/chess.h"
 
 Chess::Chess(const string &fen){
-    // Initialize board
     board = Board(fen);
-
-    // Load move maps
-    loadMoveMaps();
 }
 
 void Chess::printBoard(){
