@@ -17,6 +17,8 @@ public:
     vector<string> getMoves(){return moves;};
     void generateMoves();
     void printGeneratedMoves();
+    bool isTerminalState();
+    float getTerminalValue();
 
 private:
     Board &board;

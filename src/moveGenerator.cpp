@@ -70,16 +70,33 @@ void MoveGenerator::generateMoves(){
     }
 
     // Sort moves
-    sort(moves.begin(), moves.end(), [](Move &a, Move &b) {
-        return a.getUci() < b.getUci();
+    sort(moves.begin(), moves.end(), [](string &a, string &b) {
+        return a < b;
     });
 }
 
 void MoveGenerator::printGeneratedMoves(){
-    for(Move move: moves){
-        move.printMove();
+    for(string move: moves){
+        cout << move << endl;
     }
 }
+
+bool MoveGenerator::isTerminalState(){
+    if(moves.size() > 0)
+        return false;
+    return true;
+}
+
+float MoveGenerator::getTerminalValue(){
+    if(isTerminalState()){
+        if(numCheckers == 0)
+            return 0.5;    
+        return -1.0;
+    }
+    return 0.0;
+}
+
+
 
 void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPieces, uint64_t emptySquares){
     uint64_t startingRank = (board.isWhiteToPlay()) ? 0x00FF000000000000 : 0x000000000000FF00;
@@ -1262,6 +1279,8 @@ uint64_t MoveGenerator::getPinnedRays(uint64_t pinned, uint64_t pinners, uint64_
 
     return 0xFFFFFFFFFFFFFFFF;
 }
+
+
 
 void MoveGenerator::updateNumCheckers(){
     numCheckers = 0;
