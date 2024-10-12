@@ -33,8 +33,8 @@ bool Move::isMoveValid(Board &board){
     MoveGenerator moveGenerator(board);
     // vector<Move> moves = moveGenerator.getMoves();
 
-    for(Move move : moveGenerator.getMoves()){
-        if(getUci() == move.getUci())
+    for(string move : moveGenerator.getMoves()){
+        if(getUci() == move)
             return true;
     }
     return false;

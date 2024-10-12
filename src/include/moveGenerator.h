@@ -18,7 +18,7 @@ public:
     void generateMoves();
     void printGeneratedMoves();
     bool isTerminalState();
-    float getTerminalValue();
+    float getValue();
 
 private:
     Board &board;
