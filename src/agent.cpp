@@ -5,11 +5,6 @@ Agent::Agent(bool isWhite, unordered_map<string, float> &args, ResNet &model)
 
 string Agent::getMove(Board board){
     unordered_map<string, float> policy = mcts.search(board.getFen());
-    
-    // for(auto move: policy){
-    //     cout << move.first << " " << move.second << endl;
-    // }
-    
     return getBestMove(policy);
 }
 
