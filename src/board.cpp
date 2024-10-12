@@ -134,12 +134,9 @@ Piece Board::getPieceAt(int square){
     return board[square];
 }
 
-void Board::makeMove(int fromSquare, int toSquare, string promotion){    
+void Board::makeMove(int fromSquare, int toSquare, string promotion){ 
     moveUpdate(fromSquare, toSquare);
-
-    // Move moving piece
     updateBitBoards(fromSquare, toSquare, promotion);
-
     updateBoard(fromSquare, toSquare, promotion);
 }
 
@@ -183,7 +180,7 @@ bool Board::isWhiteToPlay(){
 /// <param name="fromSquare">The square the piece is moving from.</param>
 /// <param name="toSquare">The square the piece is moving to.</param>
 void Board::moveUpdate(int fromSquare, int toSquare){
-    // En passant capture
+    // En passant capture [Makes the move]
     if(board[fromSquare].getType() == PieceType::Pawn && toSquare == enPassantIdx){
         int direction = (isWhitesTurn) ? 8 : -8;
         
@@ -191,7 +188,7 @@ void Board::moveUpdate(int fromSquare, int toSquare){
         updateBitBoards(toSquare + direction, -1);
     }
 
-    // Castling rights
+    // Castling [Makes the move]
     if(board[fromSquare].getType() == PieceType::King){
         if(isWhitesTurn){
             if((fromSquare == 60) && (toSquare == 62) && (castlingRights & 0b0001)){
@@ -233,7 +230,7 @@ void Board::moveUpdate(int fromSquare, int toSquare){
     if((toSquare == 56 || toSquare == 63) && board[toSquare].getType() == PieceType::Rook && board[toSquare].isWhite())
         castlingRights &= 0b1100;
 
-    // En passant
+    // Update en passant
     prevEnPassantIdx = enPassantIdx;
     enPassantIdx = -1;
     if(board[fromSquare].getType() == PieceType::Pawn)
@@ -241,7 +238,7 @@ void Board::moveUpdate(int fromSquare, int toSquare){
             enPassantIdx = (fromSquare + toSquare) / 2;
         
 
-    // Half move clock
+    // Update half move clock
     if(board[fromSquare].getType() == PieceType::Pawn || 
        board[toSquare].getType() != PieceType::None)
         halfMoveClock = 0;
@@ -254,6 +251,15 @@ void Board::moveUpdate(int fromSquare, int toSquare){
 
     // Change turn
     isWhitesTurn = !isWhitesTurn;
+}
+
+int Board::getNumPieces(){
+    int num = 0;
+    for(int square = 0; square < 64; square++){
+        if(board[square].getType() != PieceType::None)
+            num++;
+    }
+    return num;
 }
 
 void Board::setBitBoards(){
@@ -372,14 +378,14 @@ void Board::updateBitBoards(int fromSquare, int toSquare, string promotion){
             blackPawnsBB &= ~(1ULL << fromSquare);
             
         switch(promotion[0]){
-            case 'Q':
+            case 'R':
                 if(movingPiece.isWhite()){
-                    board[toSquare] = Piece('Q');
-                    whiteQueensBB |= (1ULL << toSquare);
+                    board[toSquare] = Piece('R');
+                    whiteRooksBB |= (1ULL << toSquare);
                 }
                 else{
-                    board[toSquare] = Piece('q');
-                    blackQueensBB |= (1ULL << toSquare);
+                    board[toSquare] = Piece('r');
+                    blackRooksBB |= (1ULL << toSquare);
                 }
                 break;
             case 'N':
@@ -390,6 +396,26 @@ void Board::updateBitBoards(int fromSquare, int toSquare, string promotion){
                 else{
                     board[toSquare] = Piece('n');
                     blackKnightsBB |= (1ULL << toSquare);
+                }
+                break;
+            case 'B':
+                if(movingPiece.isWhite()){
+                    board[toSquare] = Piece('B');
+                    whiteBishopsBB |= (1ULL << toSquare);
+                }
+                else{
+                    board[toSquare] = Piece('b');
+                    blackBishopsBB |= (1ULL << toSquare);
+                }
+                break;
+            case 'Q':
+                if(movingPiece.isWhite()){
+                    board[toSquare] = Piece('Q');
+                    whiteQueensBB |= (1ULL << toSquare);
+                }
+                else{
+                    board[toSquare] = Piece('q');
+                    blackQueensBB |= (1ULL << toSquare);
                 }
                 break;
         }

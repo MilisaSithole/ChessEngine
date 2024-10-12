@@ -33,12 +33,15 @@ public:
     string idxToAlgebraic(int &idx);
     bool isWhiteToPlay();
     void moveUpdate(int fromSquare, int toSquare);
+    int getNumPieces();
+    int getHalfMoveClock(){return halfMoveClock;};
+    int getFullMoveNumber(){return fullMoveNumber;};
+
     int getEnPassantSquare(){return enPassantIdx;};
     int getPrevEnPassantSquare(){return prevEnPassantIdx;};
     uint8_t getCastlingRights(){return castlingRights;};
     uint8_t getWhiteCastlingRights(){return castlingRights & 0b0011;};
     uint8_t getBlackCastlingRights(){return castlingRights & 0b1100;};
-    int getHalfMoveClock(){return halfMoveClock;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo, string promotion = "");
