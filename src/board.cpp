@@ -143,6 +143,18 @@ void Board::makeMove(int fromSquare, int toSquare, string promotion){
     updateBoard(fromSquare, toSquare, promotion);
 }
 
+void Board::makeMove(string uci){
+    string fromSquareStr = uci.substr(0, 2);
+    string toSquareStr = uci.substr(2, 2);
+    int fromSquare = algebraicToIndex(fromSquareStr);
+    int toSquare = algebraicToIndex(toSquareStr);
+    string promotion = "";
+    if(uci.length() > 4)
+        promotion = uci.substr(4, 1);
+
+    makeMove(fromSquare, toSquare, promotion);
+}
+
 void Board::updateBoard(int fromSquare, int toSquare, string promotion){
     // Promotion
     if(promotion != "")
