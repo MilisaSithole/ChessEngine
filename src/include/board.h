@@ -27,6 +27,7 @@ public:
     string getFen();
     Piece getPieceAt(int square);
     void makeMove(int fromSquare, int toSquare, string promotion = "");
+    void makeMove(string uci);
     void updateBoard(int fromSquare, int toSquare, string promotion = "");
     int algebraicToIndex(string &square);
     string idxToAlgebraic(int &idx);
@@ -37,6 +38,7 @@ public:
     uint8_t getCastlingRights(){return castlingRights;};
     uint8_t getWhiteCastlingRights(){return castlingRights & 0b0011;};
     uint8_t getBlackCastlingRights(){return castlingRights & 0b1100;};
+    int getHalfMoveClock(){return halfMoveClock;};
 
     void setBitBoards();
     void updateBitBoards(int idxFrom, int idxTo, string promotion = "");
