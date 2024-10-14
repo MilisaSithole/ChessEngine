@@ -12,7 +12,10 @@ void Board::initBoard(string fen){
 
 void Board::printBoard(){
     for(int i = 0; i < 64; i++){
-        cout << board[i].symbol() << " ";
+        if(i == lastMoveIdx)
+            cout << "□ ";
+        else
+            cout << board[i].symbol() << " ";
         if(i % 8 == 7)
             cout << endl;
     }
@@ -134,7 +137,8 @@ Piece Board::getPieceAt(int square){
     return board[square];
 }
 
-void Board::makeMove(int fromSquare, int toSquare, string promotion){ 
+void Board::makeMove(int fromSquare, int toSquare, string promotion){
+    lastMoveIdx = fromSquare;
     moveUpdate(fromSquare, toSquare);
     updateBitBoards(fromSquare, toSquare, promotion);
     updateBoard(fromSquare, toSquare, promotion);

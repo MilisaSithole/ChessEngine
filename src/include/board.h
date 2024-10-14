@@ -72,6 +72,7 @@ private:
     int enPassantIdx, prevEnPassantIdx;
     int halfMoveClock;
     int fullMoveNumber;
+    int lastMoveIdx = -1;
 
     uint64_t whitePawnsBB   = 0ULL;
     uint64_t blackPawnsBB   = 0ULL;
