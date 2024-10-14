@@ -12,6 +12,8 @@
 
 using namespace std;
 
+class MoveGenerator;
+
 class Move{
 public:
     Move(string lan, Board &board);
@@ -20,12 +22,15 @@ public:
     string indexToAlgebraic(int &idx);
     bool isMoveValid(Board &board);
     void makeMove(Board &board);
+    bool isCastle();
     void printMove();
-    int getFromSquare();
-    int getToSquare();
-    Piece getMovedPiece();
+    int getFromSquare(){return moveFrom;};
+    int getToSquare(){return moveTo;};
+    Piece getMovedPiece(){return movedPiece;};
     bool isPawnMovedOrCaptured();
     string getLan();
+
+    string lanToSan(MoveGenerator &moves);
 
 private:
     int moveFrom;
@@ -34,6 +39,9 @@ private:
     Piece capturedPiece;
     bool isWhitesTurn;
     string promotion;
+
+private:
+    bool isCapture(){return capturedPiece.getType() != PieceType::None;};
 };
 
 #endif

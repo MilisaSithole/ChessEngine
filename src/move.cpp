@@ -44,20 +44,12 @@ void Move::makeMove(Board &board){
     board.makeMove(moveFrom, moveTo, promotion);
 }
 
+bool Move::isCastle(){
+    return (movedPiece.getType() == PieceType::King) && (abs(moveFrom - moveTo) == 2);
+}
+
 void Move::printMove(){
     cout << indexToAlgebraic(moveFrom) << " -> " << indexToAlgebraic(moveTo) << promotion << endl;
-}
-
-int Move::getFromSquare(){
-    return moveFrom;
-}
-
-int Move::getToSquare(){
-    return moveTo;
-}
-
-Piece Move::getMovedPiece(){
-    return movedPiece;
 }
 
 bool Move::isPawnMovedOrCaptured(){
@@ -66,4 +58,49 @@ bool Move::isPawnMovedOrCaptured(){
 
 string Move::getLan(){
     return indexToAlgebraic(moveFrom) + indexToAlgebraic(moveTo) + promotion;
+}
+
+
+
+string Move::lanToSan(MoveGenerator &moves){
+    // If move is a castle
+    if(isCastle()){
+        if(moveTo > moveFrom)
+            return "O-O";
+        else
+            return "O-O-O";
+    }
+
+    string san = "";
+
+    // if move is pawn capture
+    if(movedPiece.getType() == PieceType::Pawn){
+        if(isCapture())
+            san += indexToAlgebraic(moveFrom)[0];
+    }
+    else{
+        // TODO: ambiguity checks
+        // If not a pawn move
+        san += movedPiece.symbol();
+    }
+
+    // Check for capture
+    if(isCapture())
+        san += "x";
+
+    // Add to square
+    san += indexToAlgebraic(moveTo);
+
+    // Check for promotion
+    if(promotion != "")
+        san += "=" + promotion;
+
+    // Check for check
+    string lan = getLan();
+    moves.doMove(lan);
+    if(moves.isCheck())
+        san += (moves.isLoss()) ? "#" : "+";
+    moves.undoMoves();
+
+    return san;
 }
