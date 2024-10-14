@@ -3,8 +3,11 @@
 
 #include <unordered_map>
 #include <algorithm>
+#include <vector>
+#include <fstream>
+#include <iostream>
 
-
+#include "moveMapping.h"
 #include "resNet.h"
 #include "mcts.h"
 #include "board.h"
@@ -16,15 +19,19 @@ public:
     // Agent(bool isWhite, unordered_map<string, float> &args);
     Agent(bool isWhite, unordered_map<string, float> &args, ResNet &model);
     string getMove(Board board);
+    string getRandomMove(Board board);
+    void updateStatesRecord(string fen);
+    void saveGame(string result);
 
 private:
     bool isWhite;
     unordered_map<string, float> args;
     ResNet model;
     MCTS mcts;
+    MoveMap moveMap;
 
-private:
-    string getBestMove(unordered_map<string, float> &policy);
+    vector<string> states;
+    vector<vector<float>> policies;
 };
 
 #endif
