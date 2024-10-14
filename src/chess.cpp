@@ -1,8 +1,7 @@
 #include "include/chess.h"
 
-Chess::Chess(const string &fen){
-    board = Board(fen);
-}
+Chess::Chess(const string &fen)
+    : board(fen), moves(board){}
 
 void Chess::printBoard(){
     board.printBoard();
@@ -11,30 +10,29 @@ void Chess::printBoard(){
 void Chess::move(string lan){
     Move move(lan, board);
 
-    if(move.isMoveValid(board))
+    if(move.isMoveValid(board)){
         move.makeMove(board);
+        moves.updateBoard(board);
+    }
     else
         cout << "Invalid move: " << endl;
 }
 
-string Chess::getFen(){
-    return board.getFen();
-}
-
-string Chess::getPlayerTurn(){
-    return (board.isWhiteToPlay()) ? "White" : "Black";
+string Chess::getSan(string &lan){
+    Move move(lan, board);
+    return move.lanToSan(moves);
 }
 
 bool Chess::isGameOver(){
     cout << "Num pieces: " << board.getNumPieces() 
          << ", Half move: " << board.getHalfMoveClock() 
          << ", Full move counter:" << board.getFullMoveNumber() << endl;
+
     if(board.getNumPieces() == 2 || board.getHalfMoveClock() >= 50){
         result = "Draw";
         return true;
     }
 
-    MoveGenerator moves(board);
     bool isTerminalState = moves.isTerminalState();
     if(isTerminalState){
         if(moves.isLoss())
@@ -47,9 +45,8 @@ bool Chess::isGameOver(){
 }
 
 void Chess::printGeneratedMoves(){
-    MoveGenerator moves(board);
     if(moves.getMoves().size() == 0){
-        cout << "Checkmate" << endl;
+        cout << "No legal moves" << endl;
         return;
     }
     moves.printGeneratedMoves();
