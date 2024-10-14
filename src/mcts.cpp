@@ -62,7 +62,7 @@ void Node::backpropagate(float value){
 MCTS::MCTS(unordered_map<string, float> &args, ResNet &model)
     : args(args), model(model){}
 
-unordered_map<string, float> MCTS::search(string state){
+vector<float> MCTS::search(string state){
     Node root(state, args["c"], nullptr, "", 0, 1);
 
     torch::Tensor stateTensor = getStateTensor(state);
@@ -70,7 +70,6 @@ unordered_map<string, float> MCTS::search(string state){
 
     Board board(state);
     MoveGenerator moves(board);
-    int numMoves = moves.getMoves().size();
 
     // Dirichlet noise
     torch::Tensor dirichletNoise = torch::tensor(generateDirichletNoise(TOTAL_MOVES));
@@ -117,15 +116,13 @@ unordered_map<string, float> MCTS::search(string state){
     }
 
     // torch::Tensor actionProbs = torch::zeros({numMoves});
-    unordered_map<string, float> actionProbs(numMoves);
-    float probSum = 0;
-    for(const auto &child: root.children){
-        actionProbs[child->moveTaken] = child->visits;
-        probSum += child->visits;
-    }
+    // unordered_map<string, float> actionProbs(numMoves);
+    vector<float> actionProbs(TOTAL_MOVES, 0.0f);
+    for(const auto &child: root.children)
+        actionProbs[moveMap.getIdx(child->moveTaken)] = child->visits;
 
-    for(auto &pair: actionProbs)
-        pair.second /= probSum;
+    for(auto &val: actionProbs)
+        val /= args["numSearches"];
     return actionProbs;
 }
 
@@ -193,6 +190,14 @@ torch::Tensor MCTS::floatToTensor(float value, float maxValue){
 }
 
 
+
+vector<float> MCTS::getStateVec(string state){
+    Board board(state);
+    torch::Tensor stateTensor = getStateTensor(state).flatten();
+    vector<float> stateVec(stateTensor.data_ptr<float>(), stateTensor.data_ptr<float>() + stateTensor.numel());
+
+    return stateVec;
+}
 
 vector<float> MCTS::generateDirichletNoise(int numMoves){
     random_device rd;

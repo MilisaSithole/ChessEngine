@@ -43,7 +43,8 @@ public:
 class MCTS{
 public:
     MCTS(unordered_map<string, float> &args, ResNet &model);
-    unordered_map<string, float> search(string state);
+    vector<float> search(string state);
+    vector<float> getStateVec(string state);
 
 private:
     torch::Tensor getStateTensor(string state);
