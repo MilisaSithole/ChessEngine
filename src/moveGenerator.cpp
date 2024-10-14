@@ -35,8 +35,10 @@ void MoveGenerator::printGeneratedMoves(){
 }
 
 bool MoveGenerator::isTerminalState(){
-    if(moves.size() > 0)
+    if(moves.size() > 0){
         return false;
+    }
+
     return true;
 }
 
@@ -64,6 +66,9 @@ float MoveGenerator::getValue(){
 
 
 void MoveGenerator::init(){
+    // Clear moves
+    moves.clear();
+    
     // Set bitboards
     if(board.isWhiteToPlay()){
         myPawns = board.getWhitePawnsBB();
@@ -119,6 +124,9 @@ void MoveGenerator::init(){
 }
 
 void MoveGenerator::init(Board &board){
+    // Clear moves
+    moves.clear();
+
     // Set bitboards
     if(board.isWhiteToPlay()){
         myPawns = board.getWhitePawnsBB();
