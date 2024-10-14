@@ -15,7 +15,7 @@ void Chess::move(string lan){
         moves.updateBoard(board);
     }
     else
-        cout << "Invalid move: " << endl;
+        cout << "Invalid move: " << lan << endl;
 }
 
 string Chess::getSan(string &lan){
@@ -24,9 +24,9 @@ string Chess::getSan(string &lan){
 }
 
 bool Chess::isGameOver(){
-    cout << "Num pieces: " << board.getNumPieces() 
-         << ", Half move: " << board.getHalfMoveClock() 
-         << ", Full move counter:" << board.getFullMoveNumber() << endl;
+    // cout << "Num pieces: " << board.getNumPieces() 
+    //      << ", Half move: " << board.getHalfMoveClock() 
+    //      << ", Full move counter:" << board.getFullMoveNumber() << endl;
 
     if(board.getNumPieces() == 2 || board.getHalfMoveClock() >= 50){
         result = "Draw";
@@ -39,6 +39,8 @@ bool Chess::isGameOver(){
             result = (board.isWhiteToPlay()) ? "Black" : "White";
         else
             result = "Draw";
+
+        return true;
     }
 
     return isTerminalState;

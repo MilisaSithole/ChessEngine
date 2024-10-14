@@ -9,9 +9,6 @@ MoveMap::MoveMap(){
         cout << "Error opening moves file" << endl;
         return;
     }
-    else{
-        cout << "Moves file loaded" << endl;
-    }
 
     int idx;
     string move;

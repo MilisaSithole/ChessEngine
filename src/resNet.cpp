@@ -3,7 +3,6 @@
 ResNet::ResNet(){
     try{
         model = torch::jit::load(modelPath);
-        cout << "Model loaded" << endl;
     }
     catch(const c10::Error &e){
         cerr << "Error loading model" << e.what() << endl;
