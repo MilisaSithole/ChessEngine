@@ -1,6 +1,69 @@
 #include "include/moveGenerator.h"
 
 MoveGenerator::MoveGenerator(Board &board) : board(board) {
+    init();
+    generateMoves();
+}
+
+void MoveGenerator::updateBoard(Board &board){
+    this->board = board;
+    init();
+    generateMoves();
+}
+
+void MoveGenerator::generateMoves(){
+    generateKingMoves(myKing, enemyPieces, allPieces);
+
+    if(numCheckers < 2){
+        generatePawnMoves(myPawns, enemyPieces, emptySquares);
+        generateRookMoves(myRooks, enemyPieces, allPieces);
+        generateKnightMoves(myKnights, myPieces);
+        generateBishopMoves(myBishops, enemyPieces, allPieces);
+        generateQueenMoves(myQueens, enemyPieces, allPieces);
+    }
+
+    // Sort moves
+    sort(moves.begin(), moves.end(), [](string &a, string &b) {
+        return a < b;
+    });
+}
+
+void MoveGenerator::printGeneratedMoves(){
+    for(string move: moves){
+        cout << move << endl;
+    }
+}
+
+bool MoveGenerator::isTerminalState(){
+    if(moves.size() > 0)
+        return false;
+    return true;
+}
+
+void MoveGenerator::doMove(string &lan){
+    Board doMoveBoard(board.getFen());
+    doMoveBoard.makeMove(lan);
+    init(doMoveBoard);
+}
+
+bool MoveGenerator::isLoss(){
+    if(isTerminalState() && numCheckers != 0)
+        return true;
+    return false;
+}
+
+float MoveGenerator::getValue(){
+    if(isTerminalState()){
+        if(numCheckers == 0)
+            return 0.5;    
+        return -1.0;
+    }
+    return 0.0;
+}
+
+
+
+void MoveGenerator::init(){
     // Set bitboards
     if(board.isWhiteToPlay()){
         myPawns = board.getWhitePawnsBB();
@@ -53,53 +116,61 @@ MoveGenerator::MoveGenerator(Board &board) : board(board) {
 
     if(!pinners)
         pinnedPieces = 0ULL;
-
-    // Generate legal moves
-    generateMoves();
 }
 
-void MoveGenerator::generateMoves(){
-    generateKingMoves(myKing, enemyPieces, allPieces);
+void MoveGenerator::init(Board &board){
+    // Set bitboards
+    if(board.isWhiteToPlay()){
+        myPawns = board.getWhitePawnsBB();
+        myRooks = board.getWhiteRooksBB();
+        myKnights = board.getWhiteKnightsBB();
+        myBishops = board.getWhiteBishopsBB();
+        myQueens = board.getWhiteQueensBB();
+        myKing = board.getWhiteKingBB();
+        myPieces = board.getWhiteBB();
 
-    if(numCheckers < 2){
-        generatePawnMoves(myPawns, enemyPieces, emptySquares);
-        generateRookMoves(myRooks, enemyPieces, allPieces);
-        generateKnightMoves(myKnights, myPieces);
-        generateBishopMoves(myBishops, enemyPieces, allPieces);
-        generateQueenMoves(myQueens, enemyPieces, allPieces);
+        enemyPawns = board.getBlackPawnsBB();
+        enemyRooks = board.getBlackRooksBB();
+        enemyKnights = board.getBlackKnightsBB();
+        enemyBishops = board.getBlackBishopsBB();
+        enemyQueens = board.getBlackQueensBB();
+        enemyKing = board.getBlackKingBB();
+        enemyPieces = board.getBlackBB();
     }
+    else{
+        myPawns = board.getBlackPawnsBB();
+        myRooks = board.getBlackRooksBB();
+        myKnights = board.getBlackKnightsBB();
+        myBishops = board.getBlackBishopsBB();
+        myQueens = board.getBlackQueensBB();
+        myKing = board.getBlackKingBB();
+        myPieces = board.getBlackBB();
 
-    // Sort moves
-    sort(moves.begin(), moves.end(), [](string &a, string &b) {
-        return a < b;
-    });
-}
-
-void MoveGenerator::printGeneratedMoves(){
-    for(string move: moves){
-        cout << move << endl;
+        enemyPawns = board.getWhitePawnsBB();
+        enemyRooks = board.getWhiteRooksBB();
+        enemyKnights = board.getWhiteKnightsBB();
+        enemyBishops = board.getWhiteBishopsBB();
+        enemyQueens = board.getWhiteQueensBB();
+        enemyKing = board.getWhiteKingBB();
+        enemyPieces = board.getWhiteBB();
     }
-}
+    allPieces = board.getAllBB();
+    emptySquares = ~allPieces;
+    generatedMoves = 0ULL;
 
-bool MoveGenerator::isTerminalState(){
-    if(moves.size() > 0)
-        return false;
-    return true;
-}
+    // Check for check
+    kingDangerSquares = getAttackedSquares(true);
+    attackedSquares = getAttackedSquares(false);    
+    checkers = getAttackers(myKing);
+    updateNumCheckers();
+    updateCheckMasks();
 
-bool MoveGenerator::isLoss(){
-    if(isTerminalState() && numCheckers != 0)
-        return true;
-    return false;
-}
+    pinnedPieces = getPinnedPieces(myKing);
 
-float MoveGenerator::getValue(){
-    if(isTerminalState()){
-        if(numCheckers == 0)
-            return 0.5;    
-        return -1.0;
-    }
-    return 0.0;
+    pinners = getPinners(pinnedPieces, myKing);
+
+    if(!pinners)
+        pinnedPieces = 0ULL;
 }
 
 
@@ -119,10 +190,10 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     else
         singlePush = ((friendlyPawns & ~pinnedPieces) << 8) & emptySquares;
 
-    singlePush &= (captureMask | blockMask); // In case in check
+    singlePush &= blockMask; // In case in check
     generatedMoves |= singlePush;
 
-    // Add the single push to the pseudo legal moves
+    // Add the single push to the moves
     int toSquare = 0;
     while(singlePush){
         if(singlePush & 1){
@@ -147,10 +218,10 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     else
         doublePush = ((friendlyPawns & ~pinnedPieces & startingRank) << 16) & (emptySquares << 8) & emptySquares;
 
-    doublePush &= (captureMask | blockMask); // In case in check
+    doublePush &= blockMask; // In case in check
     generatedMoves |= doublePush;
 
-    // Add the double push to the pseudo legal moves
+    // Add the double push to the moves
     toSquare = 0;
     while(doublePush){
         if(doublePush & 1)
@@ -170,7 +241,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     leftCaptures &= (captureMask | blockMask); // In caase in check
     generatedMoves |= leftCaptures;
 
-    // Add the left capture to the pseudo legal moves
+    // Add the left capture to the moves
     toSquare = 0;
     while(leftCaptures){
         if(leftCaptures & 1)
@@ -190,7 +261,7 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     rightCaptures &= (captureMask | blockMask); // In case in check
     generatedMoves |= rightCaptures;
 
-    // Add the right capture to the pseudo legal moves
+    // Add the right capture to the moves
     toSquare = 0;
     while(rightCaptures){
         if(rightCaptures & 1)
@@ -1104,6 +1175,8 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
 
         // Check up
         if(piece <= (attacker >> 8)){
+            if((attacker >> 8) & piece) // if 1 distance away
+                return ray | piece;
             while((ray & (piece << 8)) == 0){
                 ray |= attacker >> (8 * distance);
                 distance++;
@@ -1111,6 +1184,8 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
         }
         // Check down
         else if(piece >= (attacker << 8) && (attacker << 8) != 0ULL){
+            if((attacker << 8) & piece) // if 1 distance away
+                return ray | piece;
             while((ray & (piece >> 8)) == 0){
                 ray |= attacker << (8 * distance);
                 distance++;
@@ -1118,6 +1193,8 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
         }
         // Check left
         else if(piece <= (attacker >> 1)){
+            if((attacker >> 1) & piece) // if 1 distance away
+                return ray | piece;
             while((ray & (attacker >> 1)) == 0){
                 ray |= piece << distance;
                 distance++;
@@ -1125,6 +1202,8 @@ uint64_t MoveGenerator::getRookAttackerRay(uint64_t piece, uint64_t attackers, u
         }
         // Check right
         else if(piece >= (attacker << 1) && (attacker << 1) != 0ULL){
+            if((attacker << 1) & piece) // if 1 distance away
+                return ray | piece;
             while((ray & (attacker << 1)) == 0){
                 ray |= piece >> distance;
                 distance++;
@@ -1163,6 +1242,8 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
 
         // Check up left
         if(piece < attacker && (pieceSquare % 8 < attackerSquare % 8)){
+            if((attacker >> 9) & piece) // If 1 distance away
+                return ray | piece;
             while((ray & (attacker >> 9)) == 0){
                 ray |= piece << (9 * distance);
                 distance++;
@@ -1170,6 +1251,8 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
         }
         // Check up right
         else if(piece < attacker && (pieceSquare % 8 > attackerSquare % 8)){
+            if((attacker >> 7) & piece) // If 1 distance away
+                return ray | piece;
             while((ray & (attacker >> 7)) == 0){
                 ray |= piece << (7 * distance);
                 distance++;
@@ -1177,6 +1260,8 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
         }
         // Check down left
         else if(piece > attacker && (pieceSquare % 8 < attackerSquare % 8)){
+            if((attacker << 7) & piece) // If 1 distance away
+                return ray | piece;
             while((ray & (attacker << 7)) == 0){
                 ray |= piece >> (7 * distance);
                 distance++;
@@ -1184,6 +1269,8 @@ uint64_t MoveGenerator::getBishopAttackerRay(uint64_t piece, uint64_t attackers,
         }
         // Check down right
         else if(piece > attacker && (pieceSquare % 8 > attackerSquare % 8)){
+            if((attacker << 9) & piece) // If 1 distance away
+                return ray | piece;
             while((ray & (attacker << 9)) == 0){
                 ray |= piece >> (9 * distance);
                 distance++;

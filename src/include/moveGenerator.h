@@ -14,10 +14,14 @@ class Move;
 class MoveGenerator{
 public:
     MoveGenerator(Board &board);
+    void updateBoard(Board &board);
     vector<string> getMoves(){return moves;};
     void generateMoves();
     void printGeneratedMoves();
     bool isTerminalState();
+    void doMove(string &lan);
+    void undoMoves(){init();};
+    bool isCheck(){return numCheckers > 0;};
     bool isLoss();
     float getValue();
 
@@ -38,6 +42,9 @@ private:
     int numCheckers;
 
 private:
+    void init();
+    void init(Board &board);
+
     void generatePawnMoves(uint64_t friendlyPawns, uint64_t oppPieces, uint64_t emptySquares);
     bool checkForEnPassantDiscoveredCheck(uint64_t movingPawn, uint64_t capturedPawn);
     void generateRookMoves(uint64_t friendlyRooks, uint64_t oppPieces, uint64_t allPieces);
