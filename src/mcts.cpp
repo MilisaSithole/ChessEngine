@@ -42,7 +42,6 @@ void Node::expand(vector<float> &policy){
             Board currBoard(state);
             string action = moveMap.getMove(a);
 
-            // string childState = state;
             currBoard.makeMove(action);
             string childState = currBoard.getFen();
 
@@ -120,11 +119,7 @@ unordered_map<string, float> MCTS::search(string state){
     // torch::Tensor actionProbs = torch::zeros({numMoves});
     unordered_map<string, float> actionProbs(numMoves);
     float probSum = 0;
-    int childIdx = 0;
     for(const auto &child: root.children){
-        cout << "Child " << childIdx << " move: " << child->moveTaken << " visits: " << child->visits << endl;
-        childIdx++;
-
         actionProbs[child->moveTaken] = child->visits;
         probSum += child->visits;
     }
