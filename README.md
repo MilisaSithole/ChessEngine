@@ -22,10 +22,6 @@ The project consists of several key components:
 
 The AI model is based on a residual neural network (ResNet) architecture, trained using reinforcement learning through self-play. The model was initially developed and trained in Python using PyTorch, then exported and integrated into the C++ engine for efficient inference during gameplay.
 
-## Future Work
-
-This project is ongoing, with plans to further improve the AI's performance, optimize the engine's speed, and potentially add a user interface for human vs. AI play.
-
 ## Acknowledgements
 
 This project draws inspiration from the groundbreaking work done by DeepMind on AlphaZero, adapting their approach to create a powerful chess AI from first principles.
