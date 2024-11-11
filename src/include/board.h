@@ -7,6 +7,9 @@
 #include <string>
 #include <cstdint>
 #include <bitset>
+#include <unordered_map>
+#include <algorithm>
+#include <cmath>
 
 #include "piece.h"
 
@@ -25,17 +28,21 @@ public:
     void printBoard();
     void parseFen(string fen);
     string getFen();
-    Piece getPieceAt(int square);
+    string getFenNoClock();
+    Piece getPieceAt(int square){return board[square];};
     void makeMove(int fromSquare, int toSquare, string promotion = "");
     void makeMove(string lan);
     void updateBoard(int fromSquare, int toSquare, string promotion = "");
     int algebraicToIndex(string &square);
     string idxToAlgebraic(int &idx);
-    bool isWhiteToPlay();
+    bool isWhiteToPlay(){return isWhitesTurn;};
     void moveUpdate(int fromSquare, int toSquare);
     int getNumPieces();
     int getHalfMoveClock(){return halfMoveClock;};
     int getFullMoveNumber(){return fullMoveNumber;};
+    int getFenCount(string fenNoClocks){return fenCount[fenNoClocks];};
+    float getCaptureReward(){return captureReward;};
+    float getMaterialBalance();
 
     int getEnPassantSquare(){return enPassantIdx;};
     int getPrevEnPassantSquare(){return prevEnPassantIdx;};
@@ -73,6 +80,8 @@ private:
     int halfMoveClock;
     int fullMoveNumber;
     int lastMoveIdx = -1;
+    unordered_map<string, int> fenCount;
+    float captureReward;
 
     uint64_t whitePawnsBB   = 0ULL;
     uint64_t blackPawnsBB   = 0ULL;

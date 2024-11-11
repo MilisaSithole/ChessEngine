@@ -1,10 +1,12 @@
 #include "include/chess.h"
 
-Chess::Chess(const string &fen)
-    : board(fen), moves(board){}
+Chess::Chess(unordered_map<string, float> &args, const string &fen)
+    : board(fen), moves(board), args(args){}
 
-void Chess::printBoard(){
-    board.printBoard();
+bool Chess::isValidMove(string lan){
+    Move move(lan, board);
+
+    return move.isMoveValid(board);
 }
 
 void Chess::move(string lan){
@@ -13,6 +15,10 @@ void Chess::move(string lan){
     if(move.isMoveValid(board)){
         move.makeMove(board);
         moves.updateBoard(board);
+        moveHistory[board.getFenNoClock()]++;
+
+        if(moveHistory[board.getFenNoClock()] > 2)
+            result = "Draw";
     }
     else
         cout << "Invalid move: " << lan << endl;
@@ -27,8 +33,15 @@ bool Chess::isGameOver(){
     // cout << "Num pieces: " << board.getNumPieces() 
     //      << ", Half move: " << board.getHalfMoveClock() 
     //      << ", Full move counter:" << board.getFullMoveNumber() << endl;
+    // if(result != ""){
+    //     cout << "Threefold repetition" << endl;
+    //     return true;
+    // }
 
-    if(board.getNumPieces() == 2 || board.getHalfMoveClock() >= 50){
+    if(board.getNumPieces() == 2 || 
+       board.getFenCount(board.getFenNoClock()) > 2 ||
+       board.getHalfMoveClock() >= static_cast<int>(args["_50MoveRule"]) ||
+       board.getFullMoveNumber() >= static_cast<int>(args["maxMoves"]) / 2){
         result = "Draw";
         return true;
     }

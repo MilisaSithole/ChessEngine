@@ -35,10 +35,9 @@ void MoveGenerator::printGeneratedMoves(){
 }
 
 bool MoveGenerator::isTerminalState(){
-    if(moves.size() > 0){
+    if(moves.size() > 0 && stateCount < 3){
         return false;
     }
-
     return true;
 }
 
@@ -49,7 +48,7 @@ void MoveGenerator::doMove(string &lan){
 }
 
 bool MoveGenerator::isLoss(){
-    if(isTerminalState() && numCheckers != 0)
+    if(isTerminalState() && numCheckers > 0)
         return true;
     return false;
 }
@@ -57,7 +56,7 @@ bool MoveGenerator::isLoss(){
 float MoveGenerator::getValue(){
     if(isTerminalState()){
         if(numCheckers == 0)
-            return 0.5;    
+            return 0.0;    
         return -1.0;
     }
     return 0.0;
@@ -68,6 +67,9 @@ float MoveGenerator::getValue(){
 void MoveGenerator::init(){
     // Clear moves
     moves.clear();
+
+    // For 3 fold repetition
+    stateCount = board.getFenCount(board.getFenNoClock());
     
     // Set bitboards
     if(board.isWhiteToPlay()){
@@ -232,8 +234,16 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Add the double push to the moves
     toSquare = 0;
     while(doublePush){
-        if(doublePush & 1)
-            moves.push_back(Move(toSquare + (2 * direction), toSquare, board).getLan());
+        if(doublePush & 1){
+            if((1ULL << toSquare) & finalRank){
+                moves.push_back(Move(toSquare + (2 * direction), toSquare, board, "R").getLan());
+                moves.push_back(Move(toSquare + (2 * direction), toSquare, board, "N").getLan());
+                moves.push_back(Move(toSquare + (2 * direction), toSquare, board, "B").getLan());
+                moves.push_back(Move(toSquare + (2 * direction), toSquare, board, "Q").getLan());
+            }
+            else
+                moves.push_back(Move(toSquare + (2 * direction), toSquare, board).getLan());
+        }
 
         doublePush >>= 1;
         toSquare++;
@@ -252,8 +262,16 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Add the left capture to the moves
     toSquare = 0;
     while(leftCaptures){
-        if(leftCaptures & 1)
-            moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board).getLan());
+        if(leftCaptures & 1){
+            if((1ULL << toSquare) & finalRank){
+                moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board, "R").getLan());
+                moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board, "N").getLan());
+                moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board, "B").getLan());
+                moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board, "Q").getLan());
+            }
+            else
+                moves.push_back(Move(toSquare + direction + (direction % 7), toSquare, board).getLan());
+        }
         
         leftCaptures >>= 1;
         toSquare++;
@@ -272,8 +290,16 @@ void MoveGenerator::generatePawnMoves(uint64_t friendlyPawns, uint64_t enemyPiec
     // Add the right capture to the moves
     toSquare = 0;
     while(rightCaptures){
-        if(rightCaptures & 1)
-            moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board).getLan());
+        if(rightCaptures & 1){
+            if((1ULL << toSquare) & finalRank){
+                moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board, "R").getLan());
+                moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board, "N").getLan());
+                moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board, "B").getLan());
+                moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board, "Q").getLan());
+            }
+            else
+                moves.push_back(Move(toSquare + direction - (direction % 7), toSquare, board).getLan());
+        }
 
         rightCaptures >>= 1;
         toSquare++;
@@ -520,9 +546,8 @@ void MoveGenerator::generateRookMoves(uint64_t friendlyRooks, uint64_t enemyPiec
                 uint64_t pinnedRay = getPinnedRays(1ULL << fromSquare, pinners, myKing);
                 rookMoves &= pinnedRay;
             }
-            else
-                // In case in check
-                rookMoves &= (captureMask | blockMask);
+            // In case in check
+            rookMoves &= (captureMask | blockMask);
 
             // Add to moves
             generatedMoves |= rookMoves;
@@ -685,9 +710,8 @@ void MoveGenerator::generateBishopMoves(uint64_t friendlyBishops, uint64_t enemy
                 uint64_t pinnedRay = getPinnedRays(1ULL << fromSquare, pinners, myKing);
                 bishopMoves &= pinnedRay;
             }
-            else
-                // In case in check
-                bishopMoves &= (captureMask | blockMask);
+            // In case in check
+            bishopMoves &= (captureMask | blockMask);
             
             // Add the moves to the pseudo legal moves
             generatedMoves |= bishopMoves;
@@ -734,7 +758,7 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             // Remove attacked squares rom moves
             kingMoves &= ~kingDangerSquares;
 
-            // Add moves to pseudo legal moves
+            // Add moves to moves
             generatedMoves |= kingMoves;
             addBBToMoves(fromSquare, kingMoves);
 
@@ -742,6 +766,10 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
                 return; // There should only be one king on the board
 
             // Check for castling
+            if((board.isWhiteToPlay() && myKing != (1ULL << 60))
+               && (!board.isWhiteToPlay() && myKing != (1ULL << 4)))
+            return;
+
             uint64_t castleMask = 0ULL;
             if(board.getCastlingRights() & 0b0011 && board.isWhiteToPlay()){
                 // Queen side
@@ -759,16 +787,23 @@ void MoveGenerator::generateKingMoves(uint64_t friendlyKing, uint64_t enemyPiece
             }
             else if(board.getCastlingRights() & 0b1100 && !board.isWhiteToPlay()){
                 // Queen side
-                if((myKing >> 1 | myKing >> 2 | myKing >> 3) & emptySquares & ~attackedSquares){
+                castleMask = (myKing >> 1 | myKing >> 2 | myKing >> 3);
+                if((castleMask & emptySquares & ~attackedSquares) == castleMask){
                     moves.push_back(Move("e8c8", board).getLan());
                     generatedMoves |= myKing >> 2;
                 }
                 // King side
-                if((myKing << 1 | myKing << 2) & emptySquares & ~attackedSquares){
+                castleMask = (myKing << 1 | myKing << 2);
+                if((castleMask & emptySquares & ~attackedSquares) == castleMask){
                     moves.push_back(Move("e8g8", board).getLan());
                     generatedMoves |= myKing << 2;
                 }
             }
+
+            // board.printBitBoard(castleMask & emptySquares & ~attackedSquares);
+            // cout << "Can castle: " 
+            //      << (((castleMask & emptySquares & ~attackedSquares) == castleMask) ? "Yes" : "No")
+            //      << endl;
  
             return; // There should only be one king on the board
         }
@@ -932,7 +967,8 @@ uint64_t MoveGenerator::getRookAttacks(uint64_t oppRooks, bool kingDanger, uint6
                 }
                 distance++;
             }
-            rookAttacks ^= 1ULL << fromSquare;
+            uint64_t mask = ~(1ULL << fromSquare);
+            rookAttacks &= mask;
         }
 
         oppRooks >>= 1;
@@ -1064,6 +1100,9 @@ uint64_t MoveGenerator::getBishopAttacks(uint64_t oppBishops, bool kingDanger, u
                 }
                 distance++;
             }
+
+            uint64_t mask = ~(1ULL << fromSquare);
+            bishopAttacks &= mask;
         }
 
         oppBishops >>= 1;
@@ -1411,4 +1450,15 @@ void MoveGenerator::updateCheckMasks(){
         captureMask = 0ULL;
         blockMask = 0ULL;
     }
+}
+
+void MoveGenerator::printKingDanger(){
+    cout << "King danger squares:" << endl;
+    board.printBitBoard(kingDangerSquares);
+    cout << "Checkers:" << endl;
+    board.printBitBoard(checkers);
+    cout << "Capture mask:" << endl;
+    board.printBitBoard(captureMask);
+    cout << "Block mask:" << endl;
+    board.printBitBoard(blockMask);
 }

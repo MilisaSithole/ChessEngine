@@ -42,7 +42,7 @@ public:
 
 class MCTS{
 public:
-    MCTS(unordered_map<string, float> &args, ResNet &model);
+    MCTS(unordered_map<string, float> &args, ResNet &model, int threadID = 0);
     vector<float> search(string state);
     vector<float> getStateVec(string state);
 
@@ -58,6 +58,7 @@ private:
 private:
     unordered_map<string, float> args;
     ResNet model;
+    int threadID;
 };
 
 #endif

@@ -25,6 +25,8 @@ public:
     bool isLoss();
     float getValue();
 
+    void printKingDanger();
+
 private:
     Board &board;
     vector<string> moves;
@@ -40,6 +42,7 @@ private:
     uint64_t generatedMoves;
 
     int numCheckers;
+    int stateCount;
 
 private:
     void init();

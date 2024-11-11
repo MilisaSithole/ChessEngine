@@ -49,8 +49,7 @@ class ResNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(32 * 8 * 8, numOut),
-            nn.Softmax()
+            nn.Linear(32 * 8 * 8, numOut)
         )
 
         # Value head
@@ -73,28 +72,7 @@ class ResNet(nn.Module):
 
         policy = self.policyHead(x)
         value = self.valueHead(x)
-        return policy, value    
-
-class ChessDataset(Dataset):
-    def __init__(self, positions, policyLabels, valueLabels):
-        """
-        Initializes a ChessDataset object with the given positions, policy labels, and value labels.
-        
-        Args:
-            positions (list): A list of positions (e.g. chess board states).
-            policyLabels (list): A list of policy labels corresponding to the positions.
-            valueLabels (list): A list of value labels corresponding to the positions.
-        """
-        self.positions = positions
-        self.policyLabels = policyLabels
-        self.valueLabels =  valueLabels
-
-    def __len__(self):
-        return len(self.positions)
-    
-    def __getitem__(self, idx):
-        return self.positions[idx], self.policyLabels[idx], self.valueLabels[idx]
-    
+        return policy, value        
 
 def boardToTensor(board: chess.Board):
     tensor = np.zeros((19, 8, 8), dtype = np.float32)
@@ -171,7 +149,7 @@ print(board)
 # model = ChessResNet([2, 2, 2, 2], 18, 1792)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device = torch.device('cpu')
-model = ResNet(4, 19, 64, 1968, device)
+model = ResNet(30, 19, 64, 1968, device)
 model.eval()
 
 # Test input
@@ -180,12 +158,11 @@ inp = torch.tensor(inp, device = device)
 
 # Outputs
 policy, value = model(inp)
-policy = policy.squeeze(0).detach().cpu().numpy()
+policy = torch.softmax(policy, 1).squeeze(0).detach().cpu().numpy()
 value = value.item()
 
-
 # Save model
-traceAndSave(model, inp, 'ResNet')
+traceAndSave(model, inp, 'ResNet30')
 
 print('\n======= O U T P U T S =======')
 print(f'Policy:\t\t {policy}')

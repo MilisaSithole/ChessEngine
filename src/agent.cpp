@@ -1,14 +1,36 @@
 #include "include/agent.h"
 
-Agent::Agent(bool isWhite, unordered_map<string, float> &args, ResNet &model)
-    : isWhite(isWhite), args(args), model(model), mcts(args, model){}
+Agent::Agent(bool isWhite, unordered_map<string, float> &args, ResNet &model, bool isRandom, int threadID)
+    : isWhite(isWhite), args(args), model(model), mcts(args, model, threadID), isRandom(isRandom){}
 
 string Agent::getMove(Board board){
+    if(isRandom){
+        return getRandomMove(board);
+    }
+
     vector<float> policy = mcts.search(board.getFen());
     policies.push_back(policy);
 
+    float sum = 0;
+    for(auto &p: policy){
+        p = pow(p, 1.0 / args["temperature"]);
+        sum += p;
+    }
+    for(auto &p: policy)
+        p /= sum;
+
     auto maxIdx = max_element(policy.begin(), policy.end());
-    int idx = distance(policy.begin(), maxIdx);
+    int idx;
+
+    // Stochastic move selection
+    if(args["temperature"] > 1.0){
+        auto seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // + (threadID * 100);
+        mt19937 gen(seed);
+        discrete_distribution<> dist(policy.begin(), policy.end());
+        idx = dist(gen);
+    }
+    else
+        idx = distance(policy.begin(), maxIdx);
 
     return moveMap.getMove(idx);
 }
@@ -24,28 +46,33 @@ string Agent::getRandomMove(Board board){
     return movesVec[idx];
 }
 
-void Agent::updateStatesRecord(string fen){
+void Agent::updateStatesRecord(string fen, float captureReward){
     states.push_back(fen);
+    values.push_back(captureReward * captureBias);
 }
 
-void Agent::saveGame(string result){
+void Agent::saveGame(string result, int threadID){
     // Init values vector
     int numMoves = states.size();
-    vector<float> values(numMoves, 0);
 
     int value = 0;
     if(result == "White")
         value = 1;
     if(result == "Black")
         value = -1;
+
+    if(!isWhite)
+        value *= -1;
     
     if(value != 0)
         for(int i = 0; i < numMoves; i++){
-            values[i] = value;
+            values[i] += value * terminalBias;
             value *= -1;
         }
 
-    string fileName = "../src/games/games.csv";
+    string fileName = (threadID == -1) ? 
+                      "../src/games/games_" + to_string(model.getVersion()) + ".csv" : 
+                      "../src/games/games_" + to_string(model.getVersion()) + to_string(threadID) + ".csv";
     ofstream outFile(fileName, ios::app);
 
     // Check file open
@@ -79,8 +106,7 @@ void Agent::saveGame(string result){
     }
 
     outFile.close();
-    cout << "Game saved \n" << endl;
-
+    
     // Clear memory
     states.clear();
     policies.clear();

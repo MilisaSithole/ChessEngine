@@ -45,6 +45,25 @@ Colour Piece::getColour() const{
     return colour;
 }
 
+float Piece::getValue(){
+    switch(type){
+        case PieceType::Pawn:
+            return 1.0f;
+        case PieceType::Rook:
+            return 5.0f;
+        case PieceType::Knight:
+            return 3.0f;
+        case PieceType::Bishop:
+            return 3.0f;
+        case PieceType::Queen:
+            return 9.0f;
+        case PieceType::King:
+            return 20.0f;
+        default:
+            return 0.0f;
+    }
+}
+
 void Piece::setType(PieceType type){
     this->type = type;
 }

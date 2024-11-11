@@ -59,28 +59,29 @@ void Node::backpropagate(float value){
         parent->backpropagate(-value);
 }
 
-MCTS::MCTS(unordered_map<string, float> &args, ResNet &model)
-    : args(args), model(model){}
+MCTS::MCTS(unordered_map<string, float> &args, ResNet &model, int threadID)
+    : args(args), model(model), threadID(threadID){}
 
 vector<float> MCTS::search(string state){
     Node root(state, args["c"], nullptr, "", 0, 1);
 
-    torch::Tensor stateTensor = getStateTensor(state);
+    torch::Tensor stateTensor = getStateTensor(state).to(model.getDevice());
     torch::Tensor policy = model.getPolicy(stateTensor);
 
     Board board(state);
     MoveGenerator moves(board);
 
     // Dirichlet noise
-    torch::Tensor dirichletNoise = torch::tensor(generateDirichletNoise(TOTAL_MOVES));
+    torch::Tensor dirichletNoise = torch::tensor(generateDirichletNoise(TOTAL_MOVES)).to(model.getDevice());
     policy = (1 - args["dirichletEps"]) * policy + (args["dirichletEps"] * dirichletNoise);
 
     // Filter out illegal moves
-    torch::Tensor legalMovesTensor = getLegalMovesTensor(board);    
+    torch::Tensor legalMovesTensor = getLegalMovesTensor(board).to(model.getDevice());    
     policy *= legalMovesTensor;
-    policy /= policy.sum();
+    policy /= policy.sum();    
 
     // Expand using the policy
+    policy = policy.to(torch::kCPU);
     vector<float> policyVec(policy.data_ptr<float>(), policy.data_ptr<float>() + TOTAL_MOVES);
     root.expand(policyVec);
 
@@ -92,37 +93,60 @@ vector<float> MCTS::search(string state){
         while(node->isFullyExpanded())
             node = node->selectChild();
 
+        if(node->parent != nullptr){
+            board.parseFen(node->parent->state);
+            board.makeMove(node->moveTaken);
+        }
+
         bool isTerminal = moves.isTerminalState();
         float value = moves.getValue();
 
         if(!isTerminal){
-            stateTensor = getStateTensor(node->state);
+            stateTensor = getStateTensor(node->state).to(model.getDevice());
             auto modelOutput = model.getOutput(stateTensor).toTuple();
             policy = modelOutput->elements()[0].toTensor().squeeze();
             value = modelOutput->elements()[1].toTensor().item<float>();
+            
+            if(node->parent != nullptr){
+                node->parent->value += board.getCaptureReward() * 0.02;
+                node->parent->value += (moves.isCheck()) ? 0.325 : 0.0;
+            }
+            value -= board.getCaptureReward() * 0.02;
+            value -= (moves.isCheck()) ? 0.325 : 0.0;
+            value += board.getMaterialBalance() * 0.3;
 
             // Filter out illegal moves
-            legalMovesTensor = getLegalMovesTensor(Board(node->state));
+            legalMovesTensor = getLegalMovesTensor(Board(node->state)).to(model.getDevice());
             policy *= legalMovesTensor;
             policy /= policy.sum();
 
             // Expand using the policy
+            policy = policy.to(torch::kCPU);
             policyVec = vector<float>(policy.data_ptr<float>(), policy.data_ptr<float>() + TOTAL_MOVES);
             node->expand(policyVec);
         }
+
+        // cout << "[" << threadID << "] Search: " << search << " Value: " << value << " State " << node->state << endl;
 
         // Backprop
         node->backpropagate(value);
     }
 
-    // torch::Tensor actionProbs = torch::zeros({numMoves});
-    // unordered_map<string, float> actionProbs(numMoves);
     vector<float> actionProbs(TOTAL_MOVES, 0.0f);
-    for(const auto &child: root.children)
-        actionProbs[moveMap.getIdx(child->moveTaken)] = child->visits;
 
+    // for(const auto &child: root.children)
+    //     actionProbs[moveMap.getIdx(child->moveTaken)] = child->visits;
+
+    // for(auto &val: actionProbs)
+    //     val /= args["numSearches"];
+
+    for(const auto &child: root.children)
+        actionProbs[moveMap.getIdx(child->moveTaken)] = child->value;
+    
+    float sum = accumulate(actionProbs.begin(), actionProbs.end(), 0.0f);
     for(auto &val: actionProbs)
-        val /= args["numSearches"];
+        val /= sum;
+
     return actionProbs;
 }
 
@@ -160,7 +184,7 @@ torch::Tensor MCTS::getStateTensor(string state){
     stateTensor[17] = BBToTensor(enPassantSquare);
 
     // [18] Halfmove clock
-    stateTensor[18] = floatToTensor(board.getHalfMoveClock(), 50);
+    stateTensor[18] = floatToTensor(board.getHalfMoveClock(), args["_50MoveRule"]);
 
     stateTensor = stateTensor.unsqueeze(0);
 
@@ -200,8 +224,8 @@ vector<float> MCTS::getStateVec(string state){
 }
 
 vector<float> MCTS::generateDirichletNoise(int numMoves){
-    random_device rd;
-    mt19937 gen(rd());
+    auto seed = chrono::high_resolution_clock::now().time_since_epoch().count() + threadID; // + (threadID * 100);
+    mt19937 gen(seed);
     gamma_distribution<float> dirichletDist(args["dirichletAlpha"], 1.0);
 
     vector<float> dirichletNoise(numMoves);

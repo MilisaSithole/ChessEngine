@@ -17,8 +17,9 @@ using namespace std;
 
 class Chess{
 public:
-    Chess(const string &fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    void printBoard();
+    Chess(unordered_map<string, float> &args, const string &fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    void printBoard(){board.printBoard();};
+    bool isValidMove(string lan);
     void move(string lan);
     string getFen(){return board.getFen();};
     string getPlayerTurn(){return (board.isWhiteToPlay()) ? "White" : "Black";};
@@ -26,14 +27,18 @@ public:
     string getSan(string &lan);
     bool isGameOver();
     string getResult(){return result;};
+    float getCaptureReward(){return board.getCaptureReward() * 0.1;};
 
     void printGeneratedMoves();
+    void printKingDanger(){moves.printKingDanger();};
 
 private:
     Board board;
     MoveGenerator moves;
     ResNet resNet;
-    string result;
+    string result = "";
+    unordered_map<string, int> moveHistory;
+    unordered_map<string, float> args;
 };
 
 #endif

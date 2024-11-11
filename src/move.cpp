@@ -99,7 +99,7 @@ string Move::lanToSan(MoveGenerator &moves){
     string lan = getLan();
     moves.doMove(lan);
     if(moves.isCheck())
-        san += (moves.isLoss()) ? "#" : "+";
+        san += (moves.isLoss()) ? "+" : "#";
     moves.undoMoves();
 
     return san;

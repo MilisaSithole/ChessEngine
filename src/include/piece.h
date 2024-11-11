@@ -27,6 +27,7 @@ public:
 
     PieceType getType() const;
     Colour getColour() const;
+    float getValue();
 
     void setType(PieceType type);
     void setColour(Colour colour);

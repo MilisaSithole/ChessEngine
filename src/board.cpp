@@ -133,15 +133,74 @@ string Board::getFen(){
     return fen;
 }
 
-Piece Board::getPieceAt(int square){
-    return board[square];
+string Board::getFenNoClock(){
+    string fen = "";
+
+    // Piece placements 
+    int emptyCellCount = 0;
+    for(int i = 0; i < 64; i++){
+
+        
+
+        if(board[i].isEmpty()){
+            emptyCellCount++;
+        }
+        else{
+            if(emptyCellCount > 0){
+                fen += to_string(emptyCellCount);
+                emptyCellCount = 0;
+            }
+
+            fen += board[i].symbol();
+        }
+
+        if(i % 8 == 7){
+            if(emptyCellCount > 0){
+                fen += to_string(emptyCellCount);
+                emptyCellCount = 0;
+            }
+
+            if(i != 63)
+                fen += "/";
+        }
+    }
+
+    // Player turn
+    fen += (isWhitesTurn) ? " w" : " b";
+
+    // Castling rights
+    if(castlingRights == 0)
+        fen += " -";
+    else{
+        fen += " ";
+        if(castlingRights & WHITE_KINGSIDE_CASTLE)
+            fen += "K";
+        if(castlingRights & WHITE_QUEENSIDE_CASTLE)
+            fen += "Q";
+        if(castlingRights & BLACK_KINGSIDE_CASTLE)
+            fen += "k";
+        if(castlingRights & BLACK_QUEENSIDE_CASTLE)
+            fen += "q";
+    }
+
+    // En passant square
+    if(enPassantIdx == -1)
+        fen += " -";
+    else
+        fen += " " + idxToAlgebraic(enPassantIdx);
+
+    return fen;
 }
 
 void Board::makeMove(int fromSquare, int toSquare, string promotion){
     lastMoveIdx = fromSquare;
+    // To get capture reward
+    captureReward = board[toSquare].getValue() / board[fromSquare].getValue();
+    
     moveUpdate(fromSquare, toSquare);
     updateBitBoards(fromSquare, toSquare, promotion);
     updateBoard(fromSquare, toSquare, promotion);
+    fenCount[getFenNoClock()]++;
 }
 
 void Board::makeMove(string lan){
@@ -152,7 +211,6 @@ void Board::makeMove(string lan){
     string promotion = "";
     if(lan.length() > 4)
         promotion = lan.substr(4, 1);
-
     makeMove(fromSquare, toSquare, promotion);
 }
 
@@ -172,10 +230,6 @@ int Board::algebraicToIndex(string &square){
 
 string Board::idxToAlgebraic(int &idx){
     return string(1, 'a' + idx % 8) + to_string(8 - idx / 8);
-}
-
-bool Board::isWhiteToPlay(){
-    return isWhitesTurn;
 }
 
 /// <summary>
@@ -209,13 +263,13 @@ void Board::moveUpdate(int fromSquare, int toSquare){
             }
         }
         else{
-            if((fromSquare == 4) && (toSquare == 6) && (castlingRights & 0b0001)){
+            if((fromSquare == 4) && (toSquare == 6) && (castlingRights & 0b0100)){
                 updateBitBoards(7, 5);
                 board[5] = board[7];
                 board[7] = Piece();
                 castlingRights &= 0b0011;
             }
-            else if((fromSquare == 4) && (toSquare == 2) && (castlingRights & 0b0010)){
+            else if((fromSquare == 4) && (toSquare == 2) && (castlingRights & 0b1000)){
                 updateBitBoards(0, 3);
                 board[3] = board[0];
                 board[0] = Piece();
@@ -233,6 +287,13 @@ void Board::moveUpdate(int fromSquare, int toSquare){
         castlingRights &= 0b1100;
     if((toSquare == 56 || toSquare == 63) && board[toSquare].getType() == PieceType::Rook && board[toSquare].isWhite())
         castlingRights &= 0b1100;
+    // Check if King moved to update castling rights
+    if(board[fromSquare].getType() == PieceType::King){
+        if(board[fromSquare].isWhite())
+            castlingRights &= 0b1100;
+        else
+            castlingRights &= 0b0011;
+    }
 
     // Update en passant
     prevEnPassantIdx = enPassantIdx;
@@ -264,6 +325,28 @@ int Board::getNumPieces(){
             num++;
     }
     return num;
+}
+
+float Board::getMaterialBalance(){
+    float balance = 0;
+    float blackBalance = 0;
+    float whiteBalance = 0;
+    for(int square = 0; square < 64; square++){
+        if(board[square].getType() == PieceType::None || board[square].getType() == PieceType::King)
+            continue;
+        if(board[square].isWhite())
+            whiteBalance += board[square].getValue();
+        else
+            blackBalance += board[square].getValue();
+    }
+
+    balance = (whiteBalance - blackBalance) / max(whiteBalance, blackBalance);
+    if(!isWhiteToPlay())
+        balance *= -1;
+
+    if(isnan(balance))
+        balance = 0.0f;
+    return balance;
 }
 
 void Board::setBitBoards(){

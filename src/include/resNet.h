@@ -9,13 +9,16 @@ using namespace std;
 
 class ResNet{
 public:
-    ResNet();
+    ResNet(int modelVersion = 0);
     torch::jit::IValue getOutput(torch::Tensor input);
     torch::Tensor getPolicy(torch::Tensor input);
+    torch::Device getDevice(){return device;};
+    int getVersion(){return modelVersion;};
 
 private:
     torch::jit::script::Module model;
-    string modelPath = "../src/files/ResNet.pt";
+    int modelVersion;
+    torch::Device device;
 };
 
 #endif
