@@ -18,9 +18,23 @@ include_directories(${INC_DIR})
 # Find source files
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.cpp")
 
+# Set CUDA compiler path
+set(CUDACXX /usr/bin/nvcc)
+
+# Use CUDACXX as the CUDA compiler
+set(CMAKE_CUDA_COMPILER ${CUDACXX})
+
 # Find libtorch package
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/mili/Downloads/libtorch-cxx11-abi-shared-with-deps-2.4.1+cpu/libtorch")
+# set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/mili/Downloads/libtorch-cxx11-abi-shared-with-deps-2.4.1+cpu/libtorch")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/home/mili/Downloads/libtorch-cxx11-abi-shared-with-deps-2.4.1+cu124/libtorch")
 find_package(Torch REQUIRED)
+
+# Find CUDA package (ensure CUDA is found)
+find_package(CUDA REQUIRED)
+
+# Set RPATH to point to CUDA libraries
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH ${CMAKE_PREFIX_PATH} /usr/local/cuda/lib64)
 
 # Create main exe
 add_executable(ChessEngine ${SOURCES})
